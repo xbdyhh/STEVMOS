@@ -1,0 +1,850 @@
+{
+	"compiler": {
+		"version": "0.8.19+commit.7dd6d404"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "spender",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "string[]",
+						"name": "methods",
+						"type": "string[]"
+					}
+				],
+				"name": "Approval",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "spender",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "string[]",
+						"name": "methods",
+						"type": "string[]"
+					}
+				],
+				"name": "Revocation",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "caller",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "string",
+						"name": "withdrawerAddress",
+						"type": "string"
+					}
+				],
+				"name": "SetWithdrawerAddress",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "WithdrawDelegatorRewards",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "commission",
+						"type": "uint256"
+					}
+				],
+				"name": "WithdrawValidatorCommission",
+				"type": "event"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "spender",
+						"type": "address"
+					},
+					{
+						"internalType": "string[]",
+						"name": "methods",
+						"type": "string[]"
+					}
+				],
+				"name": "approve",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "approved",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					}
+				],
+				"name": "delegationRewards",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "denom",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "amount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint8",
+								"name": "precision",
+								"type": "uint8"
+							}
+						],
+						"internalType": "struct DecCoin[]",
+						"name": "rewards",
+						"type": "tuple[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					}
+				],
+				"name": "delegationTotalRewards",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "validatorAddress",
+								"type": "string"
+							},
+							{
+								"components": [
+									{
+										"internalType": "string",
+										"name": "denom",
+										"type": "string"
+									},
+									{
+										"internalType": "uint256",
+										"name": "amount",
+										"type": "uint256"
+									},
+									{
+										"internalType": "uint8",
+										"name": "precision",
+										"type": "uint8"
+									}
+								],
+								"internalType": "struct DecCoin[]",
+								"name": "reward",
+								"type": "tuple[]"
+							}
+						],
+						"internalType": "struct DelegationDelegatorReward[]",
+						"name": "rewards",
+						"type": "tuple[]"
+					},
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "denom",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "amount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint8",
+								"name": "precision",
+								"type": "uint8"
+							}
+						],
+						"internalType": "struct DecCoin[]",
+						"name": "total",
+						"type": "tuple[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					}
+				],
+				"name": "delegatorValidators",
+				"outputs": [
+					{
+						"internalType": "string[]",
+						"name": "validators",
+						"type": "string[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					}
+				],
+				"name": "delegatorWithdrawAddress",
+				"outputs": [
+					{
+						"internalType": "string",
+						"name": "withdrawAddress",
+						"type": "string"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "spender",
+						"type": "address"
+					},
+					{
+						"internalType": "string[]",
+						"name": "methods",
+						"type": "string[]"
+					}
+				],
+				"name": "revoke",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "revoked",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "withdrawerAddress",
+						"type": "string"
+					}
+				],
+				"name": "setWithdrawAddress",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "success",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					}
+				],
+				"name": "validatorCommission",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "denom",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "amount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint8",
+								"name": "precision",
+								"type": "uint8"
+							}
+						],
+						"internalType": "struct DecCoin[]",
+						"name": "commission",
+						"type": "tuple[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					}
+				],
+				"name": "validatorDistributionInfo",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "operatorAddress",
+								"type": "string"
+							},
+							{
+								"components": [
+									{
+										"internalType": "string",
+										"name": "denom",
+										"type": "string"
+									},
+									{
+										"internalType": "uint256",
+										"name": "amount",
+										"type": "uint256"
+									},
+									{
+										"internalType": "uint8",
+										"name": "precision",
+										"type": "uint8"
+									}
+								],
+								"internalType": "struct DecCoin[]",
+								"name": "selfBondRewards",
+								"type": "tuple[]"
+							},
+							{
+								"components": [
+									{
+										"internalType": "string",
+										"name": "denom",
+										"type": "string"
+									},
+									{
+										"internalType": "uint256",
+										"name": "amount",
+										"type": "uint256"
+									},
+									{
+										"internalType": "uint8",
+										"name": "precision",
+										"type": "uint8"
+									}
+								],
+								"internalType": "struct DecCoin[]",
+								"name": "commission",
+								"type": "tuple[]"
+							}
+						],
+						"internalType": "struct ValidatorDistributionInfo[]",
+						"name": "distributionInfo",
+						"type": "tuple[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					}
+				],
+				"name": "validatorOutstandingRewards",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "denom",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "amount",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint8",
+								"name": "precision",
+								"type": "uint8"
+							}
+						],
+						"internalType": "struct DecCoin[]",
+						"name": "rewards",
+						"type": "tuple[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					},
+					{
+						"internalType": "uint64",
+						"name": "startingHeight",
+						"type": "uint64"
+					},
+					{
+						"internalType": "uint64",
+						"name": "endingHeight",
+						"type": "uint64"
+					}
+				],
+				"name": "validatorSlashes",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "uint64",
+								"name": "validatorPeriod",
+								"type": "uint64"
+							},
+							{
+								"components": [
+									{
+										"internalType": "uint256",
+										"name": "value",
+										"type": "uint256"
+									},
+									{
+										"internalType": "uint8",
+										"name": "precision",
+										"type": "uint8"
+									}
+								],
+								"internalType": "struct Dec",
+								"name": "fraction",
+								"type": "tuple"
+							}
+						],
+						"internalType": "struct ValidatorSlashEvent[]",
+						"name": "slashes",
+						"type": "tuple[]"
+					},
+					{
+						"components": [
+							{
+								"internalType": "bytes",
+								"name": "nextKey",
+								"type": "bytes"
+							},
+							{
+								"internalType": "uint64",
+								"name": "total",
+								"type": "uint64"
+							}
+						],
+						"internalType": "struct PageResponse",
+						"name": "pageResponse",
+						"type": "tuple"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					}
+				],
+				"name": "withdrawDelegatorRewards",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "denom",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "amount",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Coin[]",
+						"name": "amount",
+						"type": "tuple[]"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					}
+				],
+				"name": "withdrawValidatorCommission",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "denom",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "amount",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Coin[]",
+						"name": "amount",
+						"type": "tuple[]"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"author": "Evmos Team",
+			"custom:address": "0x0000000000000000000000000000000000000801",
+			"details": "The interface through which solidity contracts will interact with Distribution",
+			"events": {
+				"Approval(address,address,string[])": {
+					"details": "This event is emitted when the allowance of a spender is set by a call to the approve method. The value field specifies the new allowance and the methods field holds the information for which methods the approval was set.",
+					"params": {
+						"methods": "The message type URLs of the methods for which the approval is set.",
+						"owner": "The owner of the tokens.",
+						"spender": "The address which will spend the funds."
+					}
+				},
+				"Revocation(address,address,string[])": {
+					"details": "This event is emitted when an owner revokes a spender's allowance.",
+					"params": {
+						"methods": "The message type URLs of the methods for which the approval is set.",
+						"owner": "The owner of the tokens.",
+						"spender": "The address which will spend the funds."
+					}
+				},
+				"SetWithdrawerAddress(address,string)": {
+					"details": "SetWithdrawerAddress defines an Event emitted when a new withdrawer address is being set",
+					"params": {
+						"caller": "the caller of the transaction",
+						"withdrawerAddress": "the newly set withdrawer address"
+					}
+				},
+				"WithdrawDelegatorRewards(address,string,uint256)": {
+					"details": "WithdrawDelegatorRewards defines an Event emitted when rewards from a delegation are withdrawn",
+					"params": {
+						"amount": "the amount being withdrawn from the delegation",
+						"delegatorAddress": "the address of the delegator",
+						"validatorAddress": "the address of the validator"
+					}
+				},
+				"WithdrawValidatorCommission(string,uint256)": {
+					"details": "WithdrawValidatorCommission defines an Event emitted when validator commissions are being withdrawn",
+					"params": {
+						"commission": "is the total commission earned by the validator",
+						"validatorAddress": "is the address of the validator"
+					}
+				}
+			},
+			"kind": "dev",
+			"methods": {
+				"approve(address,string[])": {
+					"details": "Approves a list of Cosmos or IBC transactions with a specific amount of tokens.",
+					"params": {
+						"methods": "The message type URLs of the methods to approve.",
+						"spender": "The address which will spend the funds."
+					},
+					"returns": {
+						"approved": "Boolean value to indicate if the approval was successful."
+					}
+				},
+				"delegationRewards(address,string)": {
+					"details": "Queries the total rewards accrued by a delegation from a specific address to a given validator.",
+					"params": {
+						"delegatorAddress": "The address of the delegator",
+						"validatorAddress": "The address of the validator"
+					},
+					"returns": {
+						"rewards": "The total rewards accrued by a delegation."
+					}
+				},
+				"delegationTotalRewards(address)": {
+					"details": "Queries the total rewards accrued by each validator, that a given address has delegated to.",
+					"params": {
+						"delegatorAddress": "The address of the delegator"
+					},
+					"returns": {
+						"rewards": "The total rewards accrued by each validator for a delegator.",
+						"total": "The total rewards accrued by a delegator."
+					}
+				},
+				"delegatorValidators(address)": {
+					"details": "Queries all validators, that a given address has delegated to.",
+					"params": {
+						"delegatorAddress": "The address of the delegator"
+					},
+					"returns": {
+						"validators": "The addresses of all validators, that were delegated to by the given address."
+					}
+				},
+				"delegatorWithdrawAddress(address)": {
+					"details": "Queries the address capable of withdrawing rewards for a given delegator.",
+					"params": {
+						"delegatorAddress": "The address of the delegator"
+					},
+					"returns": {
+						"withdrawAddress": "The address capable of withdrawing rewards for the delegator."
+					}
+				},
+				"revoke(address,string[])": {
+					"details": "Revokes a list of Cosmos transactions.",
+					"params": {
+						"methods": "The message type URLs of the methods to revoke.",
+						"spender": "The address which will spend the funds."
+					},
+					"returns": {
+						"revoked": "Boolean value to indicate if the revocation was successful."
+					}
+				},
+				"setWithdrawAddress(address,string)": {
+					"details": "Change the address, that can withdraw the rewards of a delegator. Note that this address cannot be a module account.",
+					"params": {
+						"delegatorAddress": "The address of the delegator",
+						"withdrawerAddress": "The address that will be capable of withdrawing rewards for the given delegator address"
+					}
+				},
+				"validatorCommission(string)": {
+					"details": "Queries the accumulated commission for a validator.",
+					"params": {
+						"validatorAddress": "The address of the validator"
+					},
+					"returns": {
+						"commission": "The validator's commission"
+					}
+				},
+				"validatorDistributionInfo(string)": {
+					"details": "Queries validator commission and self-delegation rewards for validator.",
+					"params": {
+						"validatorAddress": "The address of the validator"
+					},
+					"returns": {
+						"distributionInfo": "The validator's distribution info"
+					}
+				},
+				"validatorOutstandingRewards(string)": {
+					"details": "Queries the outstanding rewards of a validator address.",
+					"params": {
+						"validatorAddress": "The address of the validator"
+					},
+					"returns": {
+						"rewards": "The validator's outstanding rewards"
+					}
+				},
+				"validatorSlashes(string,uint64,uint64)": {
+					"details": "Queries the slashing events for a validator in a given height interval defined by the starting and ending height.",
+					"params": {
+						"endingHeight": "The ending height",
+						"startingHeight": "The starting height",
+						"validatorAddress": "The address of the validator"
+					},
+					"returns": {
+						"pageResponse": "The pagination response for the query",
+						"slashes": "The validator's slash events"
+					}
+				},
+				"withdrawDelegatorRewards(address,string)": {
+					"details": "Withdraw the rewards of a delegator from a validator",
+					"params": {
+						"delegatorAddress": "The address of the delegator",
+						"validatorAddress": "The address of the validator"
+					},
+					"returns": {
+						"amount": "The amount of Coin withdrawn"
+					}
+				},
+				"withdrawValidatorCommission(string)": {
+					"details": "Withdraws the rewards commission of a validator.",
+					"params": {
+						"validatorAddress": "The address of the validator"
+					},
+					"returns": {
+						"amount": "The amount of Coin withdrawn"
+					}
+				}
+			},
+			"title": "Distribution Precompile Contract",
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {
+				"setWithdrawAddress(address,string)": {
+					"notice": "TRANSACTIONS"
+				},
+				"validatorDistributionInfo(string)": {
+					"notice": "QUERIES"
+				}
+			},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/stateful/Distribution.sol": "DistributionI"
+		},
+		"evmVersion": "paris",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"contracts/common/GenericAuthorization.sol": {
+			"keccak256": "0x5560defd75b84c2d333dc68120a9d425423ff7cd0c443fcd50209f9d0e0dff88",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://a7fc6b0f9833f4757748e520f419543a1c4f5e5fd8096a3910a62897ef13a7b0",
+				"dweb:/ipfs/QmQNPCcwxRLFYfUpY2aAJ4mzg4hq9bS4qL4sMBiH45E9sC"
+			]
+		},
+		"contracts/common/Types.sol": {
+			"keccak256": "0x2280bf7e63e011c5263d33ae3cf64673e27ee08226116a5ae289a05c026e5cc8",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://e5c63f09b85147d1343d16c828110369fea9535c1ad69d7855f1f6f04208eaa7",
+				"dweb:/ipfs/QmQFbYkU3ao25UjSYDqUUP1sPEzFJqJnT2xAgfo5g2ghmA"
+			]
+		},
+		"contracts/stateful/Distribution.sol": {
+			"keccak256": "0x129af8b44c52e6e0299afd2df54a495854706014db407324649af3a5d0e65bdc",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://c0b4c7451e78a139a90a462cf5e89c78ca21e0a88bcab8c5d9c7f9fb266c6413",
+				"dweb:/ipfs/QmVBtoPnpf97PAZqmoixFdeoJmkdC3QiAMoG98R5SwW2Z7"
+			]
+		}
+	},
+	"version": 1
+}

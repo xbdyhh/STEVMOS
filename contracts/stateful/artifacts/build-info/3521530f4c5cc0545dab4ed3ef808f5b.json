@@ -1,0 +1,4268 @@
+{
+	"id": "3521530f4c5cc0545dab4ed3ef808f5b",
+	"_format": "hh-sol-build-info-1",
+	"solcVersion": "0.8.19",
+	"solcLongVersion": "0.8.19+commit.7dd6d404",
+	"input": {
+		"language": "Solidity",
+		"sources": {
+			"contracts/stateful/Distribution.sol": {
+				"content": "// SPDX-License-Identifier: LGPL-v3\npragma solidity >=0.8.17 .0;\n\nimport \"../common/GenericAuthorization.sol\" as genericAuth;\nimport \"../common/Types.sol\";\n\n/// @dev The DistributionI contract's address.\naddress constant DISTRIBUTION_PRECOMPILE_ADDRESS = 0x0000000000000000000000000000000000000801;\n\n/// @dev Define all the available distribution methods.\nstring constant MSG_SET_WITHDRAWER_ADDRESS = \"/cosmos.distribution.v1beta1.MsgSetWithdrawAddress\";\nstring constant MSG_WITHDRAW_DELEGATOR_REWARD = \"/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward\";\nstring constant MSG_WITHDRAW_VALIDATOR_COMMISSION = \"/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission\";\n\n/// @dev The DistributionI contract's instance.\nDistributionI constant DISTRIBUTION_CONTRACT = DistributionI(DISTRIBUTION_PRECOMPILE_ADDRESS);\n\nstruct ValidatorSlashEvent {\n    uint64 validatorPeriod;\n    Dec fraction;\n}\n\nstruct ValidatorDistributionInfo {\n    string operatorAddress;\n    DecCoin[] selfBondRewards;\n    DecCoin[] commission;\n}\n\nstruct DelegationDelegatorReward {\n    string validatorAddress;\n    DecCoin[] reward;\n}\n\n/// @author Evmos Team\n/// @title Distribution Precompile Contract\n/// @dev The interface through which solidity contracts will interact with Distribution\n/// @custom:address 0x0000000000000000000000000000000000000801\ninterface DistributionI is genericAuth.GenericAuthorizationI {\n    /// TRANSACTIONS\n    /// @dev Change the address, that can withdraw the rewards of a delegator.\n    /// Note that this address cannot be a module account.\n    /// @param delegatorAddress The address of the delegator\n    /// @param withdrawerAddress The address that will be capable of withdrawing rewards for\n    /// the given delegator address\n    function setWithdrawAddress(\n        address delegatorAddress,\n        string memory withdrawerAddress\n    ) external returns (bool success);\n\n    /// @dev Withdraw the rewards of a delegator from a validator\n    /// @param delegatorAddress The address of the delegator\n    /// @param validatorAddress The address of the validator\n    /// @return amount The amount of Coin withdrawn\n    function withdrawDelegatorRewards(\n        address delegatorAddress,\n        string memory validatorAddress\n    )\n    external\n    returns (\n        Coin[] calldata amount\n    );\n\n    /// @dev Withdraws the rewards commission of a validator.\n    /// @param validatorAddress The address of the validator\n    /// @return amount The amount of Coin withdrawn\n    function withdrawValidatorCommission(\n        string memory validatorAddress\n    )\n    external\n    returns (\n        Coin[] calldata amount\n    );\n\n    /// QUERIES\n    /// @dev Queries validator commission and self-delegation rewards for validator.\n    /// @param validatorAddress The address of the validator\n    /// @return distributionInfo The validator's distribution info\n    function validatorDistributionInfo(\n        string memory validatorAddress\n    )\n    external\n    view\n    returns (\n        ValidatorDistributionInfo[] calldata distributionInfo // FIXME: remove unnecessary slice\n    );\n\n    /// @dev Queries the outstanding rewards of a validator address.\n    /// @param validatorAddress The address of the validator\n    /// @return rewards The validator's outstanding rewards\n    function validatorOutstandingRewards(\n        string memory validatorAddress\n    )\n    external\n    view\n    returns (\n        DecCoin[] calldata rewards\n    );\n\n    /// @dev Queries the accumulated commission for a validator.\n    /// @param validatorAddress The address of the validator\n    /// @return commission The validator's commission\n    function validatorCommission(\n        string memory validatorAddress\n    )\n    external\n    view\n    returns (\n        DecCoin[] calldata commission\n    );\n\n    /// @dev Queries the slashing events for a validator in a given height interval\n    /// defined by the starting and ending height.\n    /// @param validatorAddress The address of the validator\n    /// @param startingHeight The starting height\n    /// @param endingHeight The ending height\n    /// @return slashes The validator's slash events\n    /// @return pageResponse The pagination response for the query\n    function validatorSlashes(\n        string memory validatorAddress,\n        uint64 startingHeight,\n        uint64 endingHeight\n    )\n    external\n    view\n    returns (\n        ValidatorSlashEvent[] calldata slashes,\n        PageResponse calldata pageResponse\n    );\n\n    /// @dev Queries the total rewards accrued by a delegation from a specific address to a given validator.\n    /// @param delegatorAddress The address of the delegator\n    /// @param validatorAddress The address of the validator\n    /// @return rewards The total rewards accrued by a delegation.\n    function delegationRewards(\n        address delegatorAddress,\n        string memory validatorAddress\n    )\n    external\n    view\n    returns (\n        DecCoin[] calldata rewards\n    );\n\n    /// @dev Queries the total rewards accrued by each validator, that a given\n    /// address has delegated to.\n    /// @param delegatorAddress The address of the delegator\n    /// @return rewards The total rewards accrued by each validator for a delegator.\n    /// @return total The total rewards accrued by a delegator.\n    function delegationTotalRewards(\n        address delegatorAddress\n    )\n    external\n    view\n    returns (\n        DelegationDelegatorReward[] calldata rewards,\n        DecCoin[] calldata total\n    );\n\n    /// @dev Queries all validators, that a given address has delegated to.\n    /// @param delegatorAddress The address of the delegator\n    /// @return validators The addresses of all validators, that were delegated to by the given address.\n    function delegatorValidators(\n        address delegatorAddress\n    ) external view returns (string[] calldata validators);\n\n    /// @dev Queries the address capable of withdrawing rewards for a given delegator.\n    /// @param delegatorAddress The address of the delegator\n    /// @return withdrawAddress The address capable of withdrawing rewards for the delegator.\n    function delegatorWithdrawAddress(\n        address delegatorAddress\n    ) external view returns (string memory withdrawAddress);\n\n    /// @dev SetWithdrawerAddress defines an Event emitted when a new withdrawer address is being set\n    /// @param caller the caller of the transaction\n    /// @param withdrawerAddress the newly set withdrawer address\n    event SetWithdrawerAddress(\n        address indexed caller,\n        string withdrawerAddress\n    );\n\n    /// @dev WithdrawDelegatorRewards defines an Event emitted when rewards from a delegation are withdrawn\n    /// @param delegatorAddress the address of the delegator\n    /// @param validatorAddress the address of the validator\n    /// @param amount the amount being withdrawn from the delegation\n    event WithdrawDelegatorRewards(\n        address indexed delegatorAddress,\n        string indexed validatorAddress,\n        uint256 amount\n    );\n\n    /// @dev WithdrawValidatorCommission defines an Event emitted when validator commissions are being withdrawn\n    /// @param validatorAddress is the address of the validator\n    /// @param commission is the total commission earned by the validator\n    event WithdrawValidatorCommission(\n        string indexed validatorAddress,\n        uint256 commission\n    );\n}\n"
+			},
+			"contracts/common/Types.sol": {
+				"content": "// SPDX-License-Identifier: LGPL-v3\npragma solidity >=0.8.17;\n\nstruct Dec {\n    uint256 value;\n    uint8 precision;\n}\n\n/// @dev Coin is a struct that represents a token with a denomination and an amount.\nstruct Coin {\n    string denom;\n    uint256 amount;\n}\n\n/// @dev DecCoin is a struct that represents a token with a denomination, an amount and a precision.\nstruct DecCoin {\n    string denom;\n    uint256 amount;\n    uint8 precision;\n}\n\n/// @dev PageResponse is a struct that represents a page response.\nstruct PageResponse {\n    bytes nextKey;\n    uint64 total;\n}\n"
+			},
+			"contracts/common/GenericAuthorization.sol": {
+				"content": "// SPDX-License-Identifier: LGPL-v3\npragma solidity >=0.8.17;\n\n/// @author Evmos Team\n/// @title Authorization Interface\n/// @dev The interface through which solidity contracts will interact with smart contract approvals.\ninterface GenericAuthorizationI {\n    /// @dev Approves a list of Cosmos or IBC transactions with a specific amount of tokens.\n    /// @param spender The address which will spend the funds.\n    /// @param methods The message type URLs of the methods to approve.\n    /// @return approved Boolean value to indicate if the approval was successful.\n    function approve(\n        address spender,\n        string[] calldata methods\n    ) external returns (bool approved);\n\n    /// @dev Revokes a list of Cosmos transactions.\n    /// @param spender The address which will spend the funds.\n    /// @param methods The message type URLs of the methods to revoke.\n    /// @return revoked Boolean value to indicate if the revocation was successful.\n    function revoke(\n        address spender,\n        string[] calldata methods\n    ) external returns (bool revoked);\n\n    /// @dev This event is emitted when the allowance of a spender is set by a call to the approve method.\n    /// The value field specifies the new allowance and the methods field holds the information for which methods\n    /// the approval was set.\n    /// @param owner The owner of the tokens.\n    /// @param spender The address which will spend the funds.\n    /// @param methods The message type URLs of the methods for which the approval is set.\n    event Approval(\n        address indexed owner,\n        address indexed spender,\n        string[] methods\n    );\n\n    /// @dev This event is emitted when an owner revokes a spender's allowance.\n    /// @param owner The owner of the tokens.\n    /// @param spender The address which will spend the funds.\n    /// @param methods The message type URLs of the methods for which the approval is set.\n    event Revocation(\n        address indexed owner,\n        address indexed spender,\n        string[] methods\n    );\n}\n"
+			}
+		},
+		"settings": {
+			"optimizer": {
+				"enabled": false,
+				"runs": 200
+			},
+			"outputSelection": {
+				"*": {
+					"": [
+						"ast"
+					],
+					"*": [
+						"abi",
+						"metadata",
+						"devdoc",
+						"userdoc",
+						"storageLayout",
+						"evm.legacyAssembly",
+						"evm.bytecode",
+						"evm.deployedBytecode",
+						"evm.methodIdentifiers",
+						"evm.gasEstimates",
+						"evm.assembly"
+					]
+				}
+			}
+		}
+	},
+	"output": {
+		"contracts": {
+			"contracts/common/GenericAuthorization.sol": {
+				"GenericAuthorizationI": {
+					"abi": [
+						{
+							"anonymous": false,
+							"inputs": [
+								{
+									"indexed": true,
+									"internalType": "address",
+									"name": "owner",
+									"type": "address"
+								},
+								{
+									"indexed": true,
+									"internalType": "address",
+									"name": "spender",
+									"type": "address"
+								},
+								{
+									"indexed": false,
+									"internalType": "string[]",
+									"name": "methods",
+									"type": "string[]"
+								}
+							],
+							"name": "Approval",
+							"type": "event"
+						},
+						{
+							"anonymous": false,
+							"inputs": [
+								{
+									"indexed": true,
+									"internalType": "address",
+									"name": "owner",
+									"type": "address"
+								},
+								{
+									"indexed": true,
+									"internalType": "address",
+									"name": "spender",
+									"type": "address"
+								},
+								{
+									"indexed": false,
+									"internalType": "string[]",
+									"name": "methods",
+									"type": "string[]"
+								}
+							],
+							"name": "Revocation",
+							"type": "event"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "address",
+									"name": "spender",
+									"type": "address"
+								},
+								{
+									"internalType": "string[]",
+									"name": "methods",
+									"type": "string[]"
+								}
+							],
+							"name": "approve",
+							"outputs": [
+								{
+									"internalType": "bool",
+									"name": "approved",
+									"type": "bool"
+								}
+							],
+							"stateMutability": "nonpayable",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "address",
+									"name": "spender",
+									"type": "address"
+								},
+								{
+									"internalType": "string[]",
+									"name": "methods",
+									"type": "string[]"
+								}
+							],
+							"name": "revoke",
+							"outputs": [
+								{
+									"internalType": "bool",
+									"name": "revoked",
+									"type": "bool"
+								}
+							],
+							"stateMutability": "nonpayable",
+							"type": "function"
+						}
+					],
+					"devdoc": {
+						"author": "Evmos Team",
+						"details": "The interface through which solidity contracts will interact with smart contract approvals.",
+						"events": {
+							"Approval(address,address,string[])": {
+								"details": "This event is emitted when the allowance of a spender is set by a call to the approve method. The value field specifies the new allowance and the methods field holds the information for which methods the approval was set.",
+								"params": {
+									"methods": "The message type URLs of the methods for which the approval is set.",
+									"owner": "The owner of the tokens.",
+									"spender": "The address which will spend the funds."
+								}
+							},
+							"Revocation(address,address,string[])": {
+								"details": "This event is emitted when an owner revokes a spender's allowance.",
+								"params": {
+									"methods": "The message type URLs of the methods for which the approval is set.",
+									"owner": "The owner of the tokens.",
+									"spender": "The address which will spend the funds."
+								}
+							}
+						},
+						"kind": "dev",
+						"methods": {
+							"approve(address,string[])": {
+								"details": "Approves a list of Cosmos or IBC transactions with a specific amount of tokens.",
+								"params": {
+									"methods": "The message type URLs of the methods to approve.",
+									"spender": "The address which will spend the funds."
+								},
+								"returns": {
+									"approved": "Boolean value to indicate if the approval was successful."
+								}
+							},
+							"revoke(address,string[])": {
+								"details": "Revokes a list of Cosmos transactions.",
+								"params": {
+									"methods": "The message type URLs of the methods to revoke.",
+									"spender": "The address which will spend the funds."
+								},
+								"returns": {
+									"revoked": "Boolean value to indicate if the revocation was successful."
+								}
+							}
+						},
+						"title": "Authorization Interface",
+						"version": 1
+					},
+					"evm": {
+						"assembly": "",
+						"bytecode": {
+							"functionDebugData": {},
+							"generatedSources": [],
+							"linkReferences": {},
+							"object": "",
+							"opcodes": "",
+							"sourceMap": ""
+						},
+						"deployedBytecode": {
+							"functionDebugData": {},
+							"generatedSources": [],
+							"immutableReferences": {},
+							"linkReferences": {},
+							"object": "",
+							"opcodes": "",
+							"sourceMap": ""
+						},
+						"gasEstimates": null,
+						"legacyAssembly": null,
+						"methodIdentifiers": {
+							"approve(address,string[])": "7a9841ed",
+							"revoke(address,string[])": "61dc5c3b"
+						}
+					},
+					"metadata": "{\"compiler\":{\"version\":\"0.8.19+commit.7dd6d404\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string[]\",\"name\":\"methods\",\"type\":\"string[]\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string[]\",\"name\":\"methods\",\"type\":\"string[]\"}],\"name\":\"Revocation\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"string[]\",\"name\":\"methods\",\"type\":\"string[]\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"approved\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"string[]\",\"name\":\"methods\",\"type\":\"string[]\"}],\"name\":\"revoke\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"revoked\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"author\":\"Evmos Team\",\"details\":\"The interface through which solidity contracts will interact with smart contract approvals.\",\"events\":{\"Approval(address,address,string[])\":{\"details\":\"This event is emitted when the allowance of a spender is set by a call to the approve method. The value field specifies the new allowance and the methods field holds the information for which methods the approval was set.\",\"params\":{\"methods\":\"The message type URLs of the methods for which the approval is set.\",\"owner\":\"The owner of the tokens.\",\"spender\":\"The address which will spend the funds.\"}},\"Revocation(address,address,string[])\":{\"details\":\"This event is emitted when an owner revokes a spender's allowance.\",\"params\":{\"methods\":\"The message type URLs of the methods for which the approval is set.\",\"owner\":\"The owner of the tokens.\",\"spender\":\"The address which will spend the funds.\"}}},\"kind\":\"dev\",\"methods\":{\"approve(address,string[])\":{\"details\":\"Approves a list of Cosmos or IBC transactions with a specific amount of tokens.\",\"params\":{\"methods\":\"The message type URLs of the methods to approve.\",\"spender\":\"The address which will spend the funds.\"},\"returns\":{\"approved\":\"Boolean value to indicate if the approval was successful.\"}},\"revoke(address,string[])\":{\"details\":\"Revokes a list of Cosmos transactions.\",\"params\":{\"methods\":\"The message type URLs of the methods to revoke.\",\"spender\":\"The address which will spend the funds.\"},\"returns\":{\"revoked\":\"Boolean value to indicate if the revocation was successful.\"}}},\"title\":\"Authorization Interface\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/common/GenericAuthorization.sol\":\"GenericAuthorizationI\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/common/GenericAuthorization.sol\":{\"keccak256\":\"0x5560defd75b84c2d333dc68120a9d425423ff7cd0c443fcd50209f9d0e0dff88\",\"license\":\"LGPL-v3\",\"urls\":[\"bzz-raw://a7fc6b0f9833f4757748e520f419543a1c4f5e5fd8096a3910a62897ef13a7b0\",\"dweb:/ipfs/QmQNPCcwxRLFYfUpY2aAJ4mzg4hq9bS4qL4sMBiH45E9sC\"]}},\"version\":1}",
+					"storageLayout": {
+						"storage": [],
+						"types": null
+					},
+					"userdoc": {
+						"kind": "user",
+						"methods": {},
+						"version": 1
+					}
+				}
+			},
+			"contracts/stateful/Distribution.sol": {
+				"DistributionI": {
+					"abi": [
+						{
+							"anonymous": false,
+							"inputs": [
+								{
+									"indexed": true,
+									"internalType": "address",
+									"name": "owner",
+									"type": "address"
+								},
+								{
+									"indexed": true,
+									"internalType": "address",
+									"name": "spender",
+									"type": "address"
+								},
+								{
+									"indexed": false,
+									"internalType": "string[]",
+									"name": "methods",
+									"type": "string[]"
+								}
+							],
+							"name": "Approval",
+							"type": "event"
+						},
+						{
+							"anonymous": false,
+							"inputs": [
+								{
+									"indexed": true,
+									"internalType": "address",
+									"name": "owner",
+									"type": "address"
+								},
+								{
+									"indexed": true,
+									"internalType": "address",
+									"name": "spender",
+									"type": "address"
+								},
+								{
+									"indexed": false,
+									"internalType": "string[]",
+									"name": "methods",
+									"type": "string[]"
+								}
+							],
+							"name": "Revocation",
+							"type": "event"
+						},
+						{
+							"anonymous": false,
+							"inputs": [
+								{
+									"indexed": true,
+									"internalType": "address",
+									"name": "caller",
+									"type": "address"
+								},
+								{
+									"indexed": false,
+									"internalType": "string",
+									"name": "withdrawerAddress",
+									"type": "string"
+								}
+							],
+							"name": "SetWithdrawerAddress",
+							"type": "event"
+						},
+						{
+							"anonymous": false,
+							"inputs": [
+								{
+									"indexed": true,
+									"internalType": "address",
+									"name": "delegatorAddress",
+									"type": "address"
+								},
+								{
+									"indexed": true,
+									"internalType": "string",
+									"name": "validatorAddress",
+									"type": "string"
+								},
+								{
+									"indexed": false,
+									"internalType": "uint256",
+									"name": "amount",
+									"type": "uint256"
+								}
+							],
+							"name": "WithdrawDelegatorRewards",
+							"type": "event"
+						},
+						{
+							"anonymous": false,
+							"inputs": [
+								{
+									"indexed": true,
+									"internalType": "string",
+									"name": "validatorAddress",
+									"type": "string"
+								},
+								{
+									"indexed": false,
+									"internalType": "uint256",
+									"name": "commission",
+									"type": "uint256"
+								}
+							],
+							"name": "WithdrawValidatorCommission",
+							"type": "event"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "address",
+									"name": "spender",
+									"type": "address"
+								},
+								{
+									"internalType": "string[]",
+									"name": "methods",
+									"type": "string[]"
+								}
+							],
+							"name": "approve",
+							"outputs": [
+								{
+									"internalType": "bool",
+									"name": "approved",
+									"type": "bool"
+								}
+							],
+							"stateMutability": "nonpayable",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "address",
+									"name": "delegatorAddress",
+									"type": "address"
+								},
+								{
+									"internalType": "string",
+									"name": "validatorAddress",
+									"type": "string"
+								}
+							],
+							"name": "delegationRewards",
+							"outputs": [
+								{
+									"components": [
+										{
+											"internalType": "string",
+											"name": "denom",
+											"type": "string"
+										},
+										{
+											"internalType": "uint256",
+											"name": "amount",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint8",
+											"name": "precision",
+											"type": "uint8"
+										}
+									],
+									"internalType": "struct DecCoin[]",
+									"name": "rewards",
+									"type": "tuple[]"
+								}
+							],
+							"stateMutability": "view",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "address",
+									"name": "delegatorAddress",
+									"type": "address"
+								}
+							],
+							"name": "delegationTotalRewards",
+							"outputs": [
+								{
+									"components": [
+										{
+											"internalType": "string",
+											"name": "validatorAddress",
+											"type": "string"
+										},
+										{
+											"components": [
+												{
+													"internalType": "string",
+													"name": "denom",
+													"type": "string"
+												},
+												{
+													"internalType": "uint256",
+													"name": "amount",
+													"type": "uint256"
+												},
+												{
+													"internalType": "uint8",
+													"name": "precision",
+													"type": "uint8"
+												}
+											],
+											"internalType": "struct DecCoin[]",
+											"name": "reward",
+											"type": "tuple[]"
+										}
+									],
+									"internalType": "struct DelegationDelegatorReward[]",
+									"name": "rewards",
+									"type": "tuple[]"
+								},
+								{
+									"components": [
+										{
+											"internalType": "string",
+											"name": "denom",
+											"type": "string"
+										},
+										{
+											"internalType": "uint256",
+											"name": "amount",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint8",
+											"name": "precision",
+											"type": "uint8"
+										}
+									],
+									"internalType": "struct DecCoin[]",
+									"name": "total",
+									"type": "tuple[]"
+								}
+							],
+							"stateMutability": "view",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "address",
+									"name": "delegatorAddress",
+									"type": "address"
+								}
+							],
+							"name": "delegatorValidators",
+							"outputs": [
+								{
+									"internalType": "string[]",
+									"name": "validators",
+									"type": "string[]"
+								}
+							],
+							"stateMutability": "view",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "address",
+									"name": "delegatorAddress",
+									"type": "address"
+								}
+							],
+							"name": "delegatorWithdrawAddress",
+							"outputs": [
+								{
+									"internalType": "string",
+									"name": "withdrawAddress",
+									"type": "string"
+								}
+							],
+							"stateMutability": "view",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "address",
+									"name": "spender",
+									"type": "address"
+								},
+								{
+									"internalType": "string[]",
+									"name": "methods",
+									"type": "string[]"
+								}
+							],
+							"name": "revoke",
+							"outputs": [
+								{
+									"internalType": "bool",
+									"name": "revoked",
+									"type": "bool"
+								}
+							],
+							"stateMutability": "nonpayable",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "address",
+									"name": "delegatorAddress",
+									"type": "address"
+								},
+								{
+									"internalType": "string",
+									"name": "withdrawerAddress",
+									"type": "string"
+								}
+							],
+							"name": "setWithdrawAddress",
+							"outputs": [
+								{
+									"internalType": "bool",
+									"name": "success",
+									"type": "bool"
+								}
+							],
+							"stateMutability": "nonpayable",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "string",
+									"name": "validatorAddress",
+									"type": "string"
+								}
+							],
+							"name": "validatorCommission",
+							"outputs": [
+								{
+									"components": [
+										{
+											"internalType": "string",
+											"name": "denom",
+											"type": "string"
+										},
+										{
+											"internalType": "uint256",
+											"name": "amount",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint8",
+											"name": "precision",
+											"type": "uint8"
+										}
+									],
+									"internalType": "struct DecCoin[]",
+									"name": "commission",
+									"type": "tuple[]"
+								}
+							],
+							"stateMutability": "view",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "string",
+									"name": "validatorAddress",
+									"type": "string"
+								}
+							],
+							"name": "validatorDistributionInfo",
+							"outputs": [
+								{
+									"components": [
+										{
+											"internalType": "string",
+											"name": "operatorAddress",
+											"type": "string"
+										},
+										{
+											"components": [
+												{
+													"internalType": "string",
+													"name": "denom",
+													"type": "string"
+												},
+												{
+													"internalType": "uint256",
+													"name": "amount",
+													"type": "uint256"
+												},
+												{
+													"internalType": "uint8",
+													"name": "precision",
+													"type": "uint8"
+												}
+											],
+											"internalType": "struct DecCoin[]",
+											"name": "selfBondRewards",
+											"type": "tuple[]"
+										},
+										{
+											"components": [
+												{
+													"internalType": "string",
+													"name": "denom",
+													"type": "string"
+												},
+												{
+													"internalType": "uint256",
+													"name": "amount",
+													"type": "uint256"
+												},
+												{
+													"internalType": "uint8",
+													"name": "precision",
+													"type": "uint8"
+												}
+											],
+											"internalType": "struct DecCoin[]",
+											"name": "commission",
+											"type": "tuple[]"
+										}
+									],
+									"internalType": "struct ValidatorDistributionInfo[]",
+									"name": "distributionInfo",
+									"type": "tuple[]"
+								}
+							],
+							"stateMutability": "view",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "string",
+									"name": "validatorAddress",
+									"type": "string"
+								}
+							],
+							"name": "validatorOutstandingRewards",
+							"outputs": [
+								{
+									"components": [
+										{
+											"internalType": "string",
+											"name": "denom",
+											"type": "string"
+										},
+										{
+											"internalType": "uint256",
+											"name": "amount",
+											"type": "uint256"
+										},
+										{
+											"internalType": "uint8",
+											"name": "precision",
+											"type": "uint8"
+										}
+									],
+									"internalType": "struct DecCoin[]",
+									"name": "rewards",
+									"type": "tuple[]"
+								}
+							],
+							"stateMutability": "view",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "string",
+									"name": "validatorAddress",
+									"type": "string"
+								},
+								{
+									"internalType": "uint64",
+									"name": "startingHeight",
+									"type": "uint64"
+								},
+								{
+									"internalType": "uint64",
+									"name": "endingHeight",
+									"type": "uint64"
+								}
+							],
+							"name": "validatorSlashes",
+							"outputs": [
+								{
+									"components": [
+										{
+											"internalType": "uint64",
+											"name": "validatorPeriod",
+											"type": "uint64"
+										},
+										{
+											"components": [
+												{
+													"internalType": "uint256",
+													"name": "value",
+													"type": "uint256"
+												},
+												{
+													"internalType": "uint8",
+													"name": "precision",
+													"type": "uint8"
+												}
+											],
+											"internalType": "struct Dec",
+											"name": "fraction",
+											"type": "tuple"
+										}
+									],
+									"internalType": "struct ValidatorSlashEvent[]",
+									"name": "slashes",
+									"type": "tuple[]"
+								},
+								{
+									"components": [
+										{
+											"internalType": "bytes",
+											"name": "nextKey",
+											"type": "bytes"
+										},
+										{
+											"internalType": "uint64",
+											"name": "total",
+											"type": "uint64"
+										}
+									],
+									"internalType": "struct PageResponse",
+									"name": "pageResponse",
+									"type": "tuple"
+								}
+							],
+							"stateMutability": "view",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "address",
+									"name": "delegatorAddress",
+									"type": "address"
+								},
+								{
+									"internalType": "string",
+									"name": "validatorAddress",
+									"type": "string"
+								}
+							],
+							"name": "withdrawDelegatorRewards",
+							"outputs": [
+								{
+									"components": [
+										{
+											"internalType": "string",
+											"name": "denom",
+											"type": "string"
+										},
+										{
+											"internalType": "uint256",
+											"name": "amount",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct Coin[]",
+									"name": "amount",
+									"type": "tuple[]"
+								}
+							],
+							"stateMutability": "nonpayable",
+							"type": "function"
+						},
+						{
+							"inputs": [
+								{
+									"internalType": "string",
+									"name": "validatorAddress",
+									"type": "string"
+								}
+							],
+							"name": "withdrawValidatorCommission",
+							"outputs": [
+								{
+									"components": [
+										{
+											"internalType": "string",
+											"name": "denom",
+											"type": "string"
+										},
+										{
+											"internalType": "uint256",
+											"name": "amount",
+											"type": "uint256"
+										}
+									],
+									"internalType": "struct Coin[]",
+									"name": "amount",
+									"type": "tuple[]"
+								}
+							],
+							"stateMutability": "nonpayable",
+							"type": "function"
+						}
+					],
+					"devdoc": {
+						"author": "Evmos Team",
+						"custom:address": "0x0000000000000000000000000000000000000801",
+						"details": "The interface through which solidity contracts will interact with Distribution",
+						"events": {
+							"Approval(address,address,string[])": {
+								"details": "This event is emitted when the allowance of a spender is set by a call to the approve method. The value field specifies the new allowance and the methods field holds the information for which methods the approval was set.",
+								"params": {
+									"methods": "The message type URLs of the methods for which the approval is set.",
+									"owner": "The owner of the tokens.",
+									"spender": "The address which will spend the funds."
+								}
+							},
+							"Revocation(address,address,string[])": {
+								"details": "This event is emitted when an owner revokes a spender's allowance.",
+								"params": {
+									"methods": "The message type URLs of the methods for which the approval is set.",
+									"owner": "The owner of the tokens.",
+									"spender": "The address which will spend the funds."
+								}
+							},
+							"SetWithdrawerAddress(address,string)": {
+								"details": "SetWithdrawerAddress defines an Event emitted when a new withdrawer address is being set",
+								"params": {
+									"caller": "the caller of the transaction",
+									"withdrawerAddress": "the newly set withdrawer address"
+								}
+							},
+							"WithdrawDelegatorRewards(address,string,uint256)": {
+								"details": "WithdrawDelegatorRewards defines an Event emitted when rewards from a delegation are withdrawn",
+								"params": {
+									"amount": "the amount being withdrawn from the delegation",
+									"delegatorAddress": "the address of the delegator",
+									"validatorAddress": "the address of the validator"
+								}
+							},
+							"WithdrawValidatorCommission(string,uint256)": {
+								"details": "WithdrawValidatorCommission defines an Event emitted when validator commissions are being withdrawn",
+								"params": {
+									"commission": "is the total commission earned by the validator",
+									"validatorAddress": "is the address of the validator"
+								}
+							}
+						},
+						"kind": "dev",
+						"methods": {
+							"approve(address,string[])": {
+								"details": "Approves a list of Cosmos or IBC transactions with a specific amount of tokens.",
+								"params": {
+									"methods": "The message type URLs of the methods to approve.",
+									"spender": "The address which will spend the funds."
+								},
+								"returns": {
+									"approved": "Boolean value to indicate if the approval was successful."
+								}
+							},
+							"delegationRewards(address,string)": {
+								"details": "Queries the total rewards accrued by a delegation from a specific address to a given validator.",
+								"params": {
+									"delegatorAddress": "The address of the delegator",
+									"validatorAddress": "The address of the validator"
+								},
+								"returns": {
+									"rewards": "The total rewards accrued by a delegation."
+								}
+							},
+							"delegationTotalRewards(address)": {
+								"details": "Queries the total rewards accrued by each validator, that a given address has delegated to.",
+								"params": {
+									"delegatorAddress": "The address of the delegator"
+								},
+								"returns": {
+									"rewards": "The total rewards accrued by each validator for a delegator.",
+									"total": "The total rewards accrued by a delegator."
+								}
+							},
+							"delegatorValidators(address)": {
+								"details": "Queries all validators, that a given address has delegated to.",
+								"params": {
+									"delegatorAddress": "The address of the delegator"
+								},
+								"returns": {
+									"validators": "The addresses of all validators, that were delegated to by the given address."
+								}
+							},
+							"delegatorWithdrawAddress(address)": {
+								"details": "Queries the address capable of withdrawing rewards for a given delegator.",
+								"params": {
+									"delegatorAddress": "The address of the delegator"
+								},
+								"returns": {
+									"withdrawAddress": "The address capable of withdrawing rewards for the delegator."
+								}
+							},
+							"revoke(address,string[])": {
+								"details": "Revokes a list of Cosmos transactions.",
+								"params": {
+									"methods": "The message type URLs of the methods to revoke.",
+									"spender": "The address which will spend the funds."
+								},
+								"returns": {
+									"revoked": "Boolean value to indicate if the revocation was successful."
+								}
+							},
+							"setWithdrawAddress(address,string)": {
+								"details": "Change the address, that can withdraw the rewards of a delegator. Note that this address cannot be a module account.",
+								"params": {
+									"delegatorAddress": "The address of the delegator",
+									"withdrawerAddress": "The address that will be capable of withdrawing rewards for the given delegator address"
+								}
+							},
+							"validatorCommission(string)": {
+								"details": "Queries the accumulated commission for a validator.",
+								"params": {
+									"validatorAddress": "The address of the validator"
+								},
+								"returns": {
+									"commission": "The validator's commission"
+								}
+							},
+							"validatorDistributionInfo(string)": {
+								"details": "Queries validator commission and self-delegation rewards for validator.",
+								"params": {
+									"validatorAddress": "The address of the validator"
+								},
+								"returns": {
+									"distributionInfo": "The validator's distribution info"
+								}
+							},
+							"validatorOutstandingRewards(string)": {
+								"details": "Queries the outstanding rewards of a validator address.",
+								"params": {
+									"validatorAddress": "The address of the validator"
+								},
+								"returns": {
+									"rewards": "The validator's outstanding rewards"
+								}
+							},
+							"validatorSlashes(string,uint64,uint64)": {
+								"details": "Queries the slashing events for a validator in a given height interval defined by the starting and ending height.",
+								"params": {
+									"endingHeight": "The ending height",
+									"startingHeight": "The starting height",
+									"validatorAddress": "The address of the validator"
+								},
+								"returns": {
+									"pageResponse": "The pagination response for the query",
+									"slashes": "The validator's slash events"
+								}
+							},
+							"withdrawDelegatorRewards(address,string)": {
+								"details": "Withdraw the rewards of a delegator from a validator",
+								"params": {
+									"delegatorAddress": "The address of the delegator",
+									"validatorAddress": "The address of the validator"
+								},
+								"returns": {
+									"amount": "The amount of Coin withdrawn"
+								}
+							},
+							"withdrawValidatorCommission(string)": {
+								"details": "Withdraws the rewards commission of a validator.",
+								"params": {
+									"validatorAddress": "The address of the validator"
+								},
+								"returns": {
+									"amount": "The amount of Coin withdrawn"
+								}
+							}
+						},
+						"title": "Distribution Precompile Contract",
+						"version": 1
+					},
+					"evm": {
+						"assembly": "",
+						"bytecode": {
+							"functionDebugData": {},
+							"generatedSources": [],
+							"linkReferences": {},
+							"object": "",
+							"opcodes": "",
+							"sourceMap": ""
+						},
+						"deployedBytecode": {
+							"functionDebugData": {},
+							"generatedSources": [],
+							"immutableReferences": {},
+							"linkReferences": {},
+							"object": "",
+							"opcodes": "",
+							"sourceMap": ""
+						},
+						"gasEstimates": null,
+						"legacyAssembly": null,
+						"methodIdentifiers": {
+							"approve(address,string[])": "7a9841ed",
+							"delegationRewards(address,string)": "9ad563b4",
+							"delegationTotalRewards(address)": "54be1a28",
+							"delegatorValidators(address)": "a66cb605",
+							"delegatorWithdrawAddress(address)": "5431f450",
+							"revoke(address,string[])": "61dc5c3b",
+							"setWithdrawAddress(address,string)": "5a9d9a96",
+							"validatorCommission(string)": "3dd40f78",
+							"validatorDistributionInfo(string)": "54212a89",
+							"validatorOutstandingRewards(string)": "85b2d2da",
+							"validatorSlashes(string,uint64,uint64)": "a75395a5",
+							"withdrawDelegatorRewards(address,string)": "b46a8d61",
+							"withdrawValidatorCommission(string)": "3ce4e3be"
+						}
+					},
+					"metadata": "{\"compiler\":{\"version\":\"0.8.19+commit.7dd6d404\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string[]\",\"name\":\"methods\",\"type\":\"string[]\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string[]\",\"name\":\"methods\",\"type\":\"string[]\"}],\"name\":\"Revocation\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"withdrawerAddress\",\"type\":\"string\"}],\"name\":\"SetWithdrawerAddress\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"delegatorAddress\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"string\",\"name\":\"validatorAddress\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"WithdrawDelegatorRewards\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"string\",\"name\":\"validatorAddress\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"commission\",\"type\":\"uint256\"}],\"name\":\"WithdrawValidatorCommission\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"string[]\",\"name\":\"methods\",\"type\":\"string[]\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"approved\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"delegatorAddress\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"validatorAddress\",\"type\":\"string\"}],\"name\":\"delegationRewards\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"denom\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"precision\",\"type\":\"uint8\"}],\"internalType\":\"struct DecCoin[]\",\"name\":\"rewards\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"delegatorAddress\",\"type\":\"address\"}],\"name\":\"delegationTotalRewards\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"validatorAddress\",\"type\":\"string\"},{\"components\":[{\"internalType\":\"string\",\"name\":\"denom\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"precision\",\"type\":\"uint8\"}],\"internalType\":\"struct DecCoin[]\",\"name\":\"reward\",\"type\":\"tuple[]\"}],\"internalType\":\"struct DelegationDelegatorReward[]\",\"name\":\"rewards\",\"type\":\"tuple[]\"},{\"components\":[{\"internalType\":\"string\",\"name\":\"denom\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"precision\",\"type\":\"uint8\"}],\"internalType\":\"struct DecCoin[]\",\"name\":\"total\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"delegatorAddress\",\"type\":\"address\"}],\"name\":\"delegatorValidators\",\"outputs\":[{\"internalType\":\"string[]\",\"name\":\"validators\",\"type\":\"string[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"delegatorAddress\",\"type\":\"address\"}],\"name\":\"delegatorWithdrawAddress\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"withdrawAddress\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"string[]\",\"name\":\"methods\",\"type\":\"string[]\"}],\"name\":\"revoke\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"revoked\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"delegatorAddress\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"withdrawerAddress\",\"type\":\"string\"}],\"name\":\"setWithdrawAddress\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"success\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"validatorAddress\",\"type\":\"string\"}],\"name\":\"validatorCommission\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"denom\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"precision\",\"type\":\"uint8\"}],\"internalType\":\"struct DecCoin[]\",\"name\":\"commission\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"validatorAddress\",\"type\":\"string\"}],\"name\":\"validatorDistributionInfo\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"operatorAddress\",\"type\":\"string\"},{\"components\":[{\"internalType\":\"string\",\"name\":\"denom\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"precision\",\"type\":\"uint8\"}],\"internalType\":\"struct DecCoin[]\",\"name\":\"selfBondRewards\",\"type\":\"tuple[]\"},{\"components\":[{\"internalType\":\"string\",\"name\":\"denom\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"precision\",\"type\":\"uint8\"}],\"internalType\":\"struct DecCoin[]\",\"name\":\"commission\",\"type\":\"tuple[]\"}],\"internalType\":\"struct ValidatorDistributionInfo[]\",\"name\":\"distributionInfo\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"validatorAddress\",\"type\":\"string\"}],\"name\":\"validatorOutstandingRewards\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"denom\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"precision\",\"type\":\"uint8\"}],\"internalType\":\"struct DecCoin[]\",\"name\":\"rewards\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"validatorAddress\",\"type\":\"string\"},{\"internalType\":\"uint64\",\"name\":\"startingHeight\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"endingHeight\",\"type\":\"uint64\"}],\"name\":\"validatorSlashes\",\"outputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"validatorPeriod\",\"type\":\"uint64\"},{\"components\":[{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"precision\",\"type\":\"uint8\"}],\"internalType\":\"struct Dec\",\"name\":\"fraction\",\"type\":\"tuple\"}],\"internalType\":\"struct ValidatorSlashEvent[]\",\"name\":\"slashes\",\"type\":\"tuple[]\"},{\"components\":[{\"internalType\":\"bytes\",\"name\":\"nextKey\",\"type\":\"bytes\"},{\"internalType\":\"uint64\",\"name\":\"total\",\"type\":\"uint64\"}],\"internalType\":\"struct PageResponse\",\"name\":\"pageResponse\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"delegatorAddress\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"validatorAddress\",\"type\":\"string\"}],\"name\":\"withdrawDelegatorRewards\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"denom\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"internalType\":\"struct Coin[]\",\"name\":\"amount\",\"type\":\"tuple[]\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"validatorAddress\",\"type\":\"string\"}],\"name\":\"withdrawValidatorCommission\",\"outputs\":[{\"components\":[{\"internalType\":\"string\",\"name\":\"denom\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"internalType\":\"struct Coin[]\",\"name\":\"amount\",\"type\":\"tuple[]\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"author\":\"Evmos Team\",\"custom:address\":\"0x0000000000000000000000000000000000000801\",\"details\":\"The interface through which solidity contracts will interact with Distribution\",\"events\":{\"Approval(address,address,string[])\":{\"details\":\"This event is emitted when the allowance of a spender is set by a call to the approve method. The value field specifies the new allowance and the methods field holds the information for which methods the approval was set.\",\"params\":{\"methods\":\"The message type URLs of the methods for which the approval is set.\",\"owner\":\"The owner of the tokens.\",\"spender\":\"The address which will spend the funds.\"}},\"Revocation(address,address,string[])\":{\"details\":\"This event is emitted when an owner revokes a spender's allowance.\",\"params\":{\"methods\":\"The message type URLs of the methods for which the approval is set.\",\"owner\":\"The owner of the tokens.\",\"spender\":\"The address which will spend the funds.\"}},\"SetWithdrawerAddress(address,string)\":{\"details\":\"SetWithdrawerAddress defines an Event emitted when a new withdrawer address is being set\",\"params\":{\"caller\":\"the caller of the transaction\",\"withdrawerAddress\":\"the newly set withdrawer address\"}},\"WithdrawDelegatorRewards(address,string,uint256)\":{\"details\":\"WithdrawDelegatorRewards defines an Event emitted when rewards from a delegation are withdrawn\",\"params\":{\"amount\":\"the amount being withdrawn from the delegation\",\"delegatorAddress\":\"the address of the delegator\",\"validatorAddress\":\"the address of the validator\"}},\"WithdrawValidatorCommission(string,uint256)\":{\"details\":\"WithdrawValidatorCommission defines an Event emitted when validator commissions are being withdrawn\",\"params\":{\"commission\":\"is the total commission earned by the validator\",\"validatorAddress\":\"is the address of the validator\"}}},\"kind\":\"dev\",\"methods\":{\"approve(address,string[])\":{\"details\":\"Approves a list of Cosmos or IBC transactions with a specific amount of tokens.\",\"params\":{\"methods\":\"The message type URLs of the methods to approve.\",\"spender\":\"The address which will spend the funds.\"},\"returns\":{\"approved\":\"Boolean value to indicate if the approval was successful.\"}},\"delegationRewards(address,string)\":{\"details\":\"Queries the total rewards accrued by a delegation from a specific address to a given validator.\",\"params\":{\"delegatorAddress\":\"The address of the delegator\",\"validatorAddress\":\"The address of the validator\"},\"returns\":{\"rewards\":\"The total rewards accrued by a delegation.\"}},\"delegationTotalRewards(address)\":{\"details\":\"Queries the total rewards accrued by each validator, that a given address has delegated to.\",\"params\":{\"delegatorAddress\":\"The address of the delegator\"},\"returns\":{\"rewards\":\"The total rewards accrued by each validator for a delegator.\",\"total\":\"The total rewards accrued by a delegator.\"}},\"delegatorValidators(address)\":{\"details\":\"Queries all validators, that a given address has delegated to.\",\"params\":{\"delegatorAddress\":\"The address of the delegator\"},\"returns\":{\"validators\":\"The addresses of all validators, that were delegated to by the given address.\"}},\"delegatorWithdrawAddress(address)\":{\"details\":\"Queries the address capable of withdrawing rewards for a given delegator.\",\"params\":{\"delegatorAddress\":\"The address of the delegator\"},\"returns\":{\"withdrawAddress\":\"The address capable of withdrawing rewards for the delegator.\"}},\"revoke(address,string[])\":{\"details\":\"Revokes a list of Cosmos transactions.\",\"params\":{\"methods\":\"The message type URLs of the methods to revoke.\",\"spender\":\"The address which will spend the funds.\"},\"returns\":{\"revoked\":\"Boolean value to indicate if the revocation was successful.\"}},\"setWithdrawAddress(address,string)\":{\"details\":\"Change the address, that can withdraw the rewards of a delegator. Note that this address cannot be a module account.\",\"params\":{\"delegatorAddress\":\"The address of the delegator\",\"withdrawerAddress\":\"The address that will be capable of withdrawing rewards for the given delegator address\"}},\"validatorCommission(string)\":{\"details\":\"Queries the accumulated commission for a validator.\",\"params\":{\"validatorAddress\":\"The address of the validator\"},\"returns\":{\"commission\":\"The validator's commission\"}},\"validatorDistributionInfo(string)\":{\"details\":\"Queries validator commission and self-delegation rewards for validator.\",\"params\":{\"validatorAddress\":\"The address of the validator\"},\"returns\":{\"distributionInfo\":\"The validator's distribution info\"}},\"validatorOutstandingRewards(string)\":{\"details\":\"Queries the outstanding rewards of a validator address.\",\"params\":{\"validatorAddress\":\"The address of the validator\"},\"returns\":{\"rewards\":\"The validator's outstanding rewards\"}},\"validatorSlashes(string,uint64,uint64)\":{\"details\":\"Queries the slashing events for a validator in a given height interval defined by the starting and ending height.\",\"params\":{\"endingHeight\":\"The ending height\",\"startingHeight\":\"The starting height\",\"validatorAddress\":\"The address of the validator\"},\"returns\":{\"pageResponse\":\"The pagination response for the query\",\"slashes\":\"The validator's slash events\"}},\"withdrawDelegatorRewards(address,string)\":{\"details\":\"Withdraw the rewards of a delegator from a validator\",\"params\":{\"delegatorAddress\":\"The address of the delegator\",\"validatorAddress\":\"The address of the validator\"},\"returns\":{\"amount\":\"The amount of Coin withdrawn\"}},\"withdrawValidatorCommission(string)\":{\"details\":\"Withdraws the rewards commission of a validator.\",\"params\":{\"validatorAddress\":\"The address of the validator\"},\"returns\":{\"amount\":\"The amount of Coin withdrawn\"}}},\"title\":\"Distribution Precompile Contract\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"setWithdrawAddress(address,string)\":{\"notice\":\"TRANSACTIONS\"},\"validatorDistributionInfo(string)\":{\"notice\":\"QUERIES\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/stateful/Distribution.sol\":\"DistributionI\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/common/GenericAuthorization.sol\":{\"keccak256\":\"0x5560defd75b84c2d333dc68120a9d425423ff7cd0c443fcd50209f9d0e0dff88\",\"license\":\"LGPL-v3\",\"urls\":[\"bzz-raw://a7fc6b0f9833f4757748e520f419543a1c4f5e5fd8096a3910a62897ef13a7b0\",\"dweb:/ipfs/QmQNPCcwxRLFYfUpY2aAJ4mzg4hq9bS4qL4sMBiH45E9sC\"]},\"contracts/common/Types.sol\":{\"keccak256\":\"0x2280bf7e63e011c5263d33ae3cf64673e27ee08226116a5ae289a05c026e5cc8\",\"license\":\"LGPL-v3\",\"urls\":[\"bzz-raw://e5c63f09b85147d1343d16c828110369fea9535c1ad69d7855f1f6f04208eaa7\",\"dweb:/ipfs/QmQFbYkU3ao25UjSYDqUUP1sPEzFJqJnT2xAgfo5g2ghmA\"]},\"contracts/stateful/Distribution.sol\":{\"keccak256\":\"0x129af8b44c52e6e0299afd2df54a495854706014db407324649af3a5d0e65bdc\",\"license\":\"LGPL-v3\",\"urls\":[\"bzz-raw://c0b4c7451e78a139a90a462cf5e89c78ca21e0a88bcab8c5d9c7f9fb266c6413\",\"dweb:/ipfs/QmVBtoPnpf97PAZqmoixFdeoJmkdC3QiAMoG98R5SwW2Z7\"]}},\"version\":1}",
+					"storageLayout": {
+						"storage": [],
+						"types": null
+					},
+					"userdoc": {
+						"kind": "user",
+						"methods": {
+							"setWithdrawAddress(address,string)": {
+								"notice": "TRANSACTIONS"
+							},
+							"validatorDistributionInfo(string)": {
+								"notice": "QUERIES"
+							}
+						},
+						"version": 1
+					}
+				}
+			}
+		},
+		"sources": {
+			"contracts/common/GenericAuthorization.sol": {
+				"ast": {
+					"absolutePath": "contracts/common/GenericAuthorization.sol",
+					"exportedSymbols": {
+						"GenericAuthorizationI": [
+							45
+						]
+					},
+					"id": 46,
+					"license": "LGPL-v3",
+					"nodeType": "SourceUnit",
+					"nodes": [
+						{
+							"id": 1,
+							"literals": [
+								"solidity",
+								">=",
+								"0.8",
+								".17"
+							],
+							"nodeType": "PragmaDirective",
+							"src": "36:25:0"
+						},
+						{
+							"abstract": false,
+							"baseContracts": [],
+							"canonicalName": "GenericAuthorizationI",
+							"contractDependencies": [],
+							"contractKind": "interface",
+							"documentation": {
+								"id": 2,
+								"nodeType": "StructuredDocumentation",
+								"src": "63:159:0",
+								"text": "@author Evmos Team\n @title Authorization Interface\n @dev The interface through which solidity contracts will interact with smart contract approvals."
+							},
+							"fullyImplemented": false,
+							"id": 45,
+							"linearizedBaseContracts": [
+								45
+							],
+							"name": "GenericAuthorizationI",
+							"nameLocation": "232:21:0",
+							"nodeType": "ContractDefinition",
+							"nodes": [
+								{
+									"documentation": {
+										"id": 3,
+										"nodeType": "StructuredDocumentation",
+										"src": "260:306:0",
+										"text": "@dev Approves a list of Cosmos or IBC transactions with a specific amount of tokens.\n @param spender The address which will spend the funds.\n @param methods The message type URLs of the methods to approve.\n @return approved Boolean value to indicate if the approval was successful."
+									},
+									"functionSelector": "7a9841ed",
+									"id": 13,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "approve",
+									"nameLocation": "580:7:0",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 9,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 5,
+												"mutability": "mutable",
+												"name": "spender",
+												"nameLocation": "605:7:0",
+												"nodeType": "VariableDeclaration",
+												"scope": 13,
+												"src": "597:15:0",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 4,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "597:7:0",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 8,
+												"mutability": "mutable",
+												"name": "methods",
+												"nameLocation": "640:7:0",
+												"nodeType": "VariableDeclaration",
+												"scope": 13,
+												"src": "622:25:0",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_string_calldata_ptr_$dyn_calldata_ptr",
+													"typeString": "string[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 6,
+														"name": "string",
+														"nodeType": "ElementaryTypeName",
+														"src": "622:6:0",
+														"typeDescriptions": {
+															"typeIdentifier": "t_string_storage_ptr",
+															"typeString": "string"
+														}
+													},
+													"id": 7,
+													"nodeType": "ArrayTypeName",
+													"src": "622:8:0",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_string_storage_$dyn_storage_ptr",
+														"typeString": "string[]"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "587:66:0"
+									},
+									"returnParameters": {
+										"id": 12,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 11,
+												"mutability": "mutable",
+												"name": "approved",
+												"nameLocation": "677:8:0",
+												"nodeType": "VariableDeclaration",
+												"scope": 13,
+												"src": "672:13:0",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_bool",
+													"typeString": "bool"
+												},
+												"typeName": {
+													"id": 10,
+													"name": "bool",
+													"nodeType": "ElementaryTypeName",
+													"src": "672:4:0",
+													"typeDescriptions": {
+														"typeIdentifier": "t_bool",
+														"typeString": "bool"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "671:15:0"
+									},
+									"scope": 45,
+									"src": "571:116:0",
+									"stateMutability": "nonpayable",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"documentation": {
+										"id": 14,
+										"nodeType": "StructuredDocumentation",
+										"src": "693:265:0",
+										"text": "@dev Revokes a list of Cosmos transactions.\n @param spender The address which will spend the funds.\n @param methods The message type URLs of the methods to revoke.\n @return revoked Boolean value to indicate if the revocation was successful."
+									},
+									"functionSelector": "61dc5c3b",
+									"id": 24,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "revoke",
+									"nameLocation": "972:6:0",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 20,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 16,
+												"mutability": "mutable",
+												"name": "spender",
+												"nameLocation": "996:7:0",
+												"nodeType": "VariableDeclaration",
+												"scope": 24,
+												"src": "988:15:0",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 15,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "988:7:0",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 19,
+												"mutability": "mutable",
+												"name": "methods",
+												"nameLocation": "1031:7:0",
+												"nodeType": "VariableDeclaration",
+												"scope": 24,
+												"src": "1013:25:0",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_string_calldata_ptr_$dyn_calldata_ptr",
+													"typeString": "string[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 17,
+														"name": "string",
+														"nodeType": "ElementaryTypeName",
+														"src": "1013:6:0",
+														"typeDescriptions": {
+															"typeIdentifier": "t_string_storage_ptr",
+															"typeString": "string"
+														}
+													},
+													"id": 18,
+													"nodeType": "ArrayTypeName",
+													"src": "1013:8:0",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_string_storage_$dyn_storage_ptr",
+														"typeString": "string[]"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "978:66:0"
+									},
+									"returnParameters": {
+										"id": 23,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 22,
+												"mutability": "mutable",
+												"name": "revoked",
+												"nameLocation": "1068:7:0",
+												"nodeType": "VariableDeclaration",
+												"scope": 24,
+												"src": "1063:12:0",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_bool",
+													"typeString": "bool"
+												},
+												"typeName": {
+													"id": 21,
+													"name": "bool",
+													"nodeType": "ElementaryTypeName",
+													"src": "1063:4:0",
+													"typeDescriptions": {
+														"typeIdentifier": "t_bool",
+														"typeString": "bool"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "1062:14:0"
+									},
+									"scope": 45,
+									"src": "963:114:0",
+									"stateMutability": "nonpayable",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"anonymous": false,
+									"documentation": {
+										"id": 25,
+										"nodeType": "StructuredDocumentation",
+										"src": "1083:446:0",
+										"text": "@dev This event is emitted when the allowance of a spender is set by a call to the approve method.\n The value field specifies the new allowance and the methods field holds the information for which methods\n the approval was set.\n @param owner The owner of the tokens.\n @param spender The address which will spend the funds.\n @param methods The message type URLs of the methods for which the approval is set."
+									},
+									"eventSelector": "e2d9366a7f75ef8fcafbe7902248eb78d4b2dae87d48522003814979d166ae86",
+									"id": 34,
+									"name": "Approval",
+									"nameLocation": "1540:8:0",
+									"nodeType": "EventDefinition",
+									"parameters": {
+										"id": 33,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 27,
+												"indexed": true,
+												"mutability": "mutable",
+												"name": "owner",
+												"nameLocation": "1574:5:0",
+												"nodeType": "VariableDeclaration",
+												"scope": 34,
+												"src": "1558:21:0",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 26,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "1558:7:0",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 29,
+												"indexed": true,
+												"mutability": "mutable",
+												"name": "spender",
+												"nameLocation": "1605:7:0",
+												"nodeType": "VariableDeclaration",
+												"scope": 34,
+												"src": "1589:23:0",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 28,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "1589:7:0",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 32,
+												"indexed": false,
+												"mutability": "mutable",
+												"name": "methods",
+												"nameLocation": "1631:7:0",
+												"nodeType": "VariableDeclaration",
+												"scope": 34,
+												"src": "1622:16:0",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_string_memory_ptr_$dyn_memory_ptr",
+													"typeString": "string[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 30,
+														"name": "string",
+														"nodeType": "ElementaryTypeName",
+														"src": "1622:6:0",
+														"typeDescriptions": {
+															"typeIdentifier": "t_string_storage_ptr",
+															"typeString": "string"
+														}
+													},
+													"id": 31,
+													"nodeType": "ArrayTypeName",
+													"src": "1622:8:0",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_string_storage_$dyn_storage_ptr",
+														"typeString": "string[]"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "1548:96:0"
+									},
+									"src": "1534:111:0"
+								},
+								{
+									"anonymous": false,
+									"documentation": {
+										"id": 35,
+										"nodeType": "StructuredDocumentation",
+										"src": "1651:275:0",
+										"text": "@dev This event is emitted when an owner revokes a spender's allowance.\n @param owner The owner of the tokens.\n @param spender The address which will spend the funds.\n @param methods The message type URLs of the methods for which the approval is set."
+									},
+									"eventSelector": "b0901d422521d0496e60bfbd8023b219d603a6cb950b43b2fe95043676cb353e",
+									"id": 44,
+									"name": "Revocation",
+									"nameLocation": "1937:10:0",
+									"nodeType": "EventDefinition",
+									"parameters": {
+										"id": 43,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 37,
+												"indexed": true,
+												"mutability": "mutable",
+												"name": "owner",
+												"nameLocation": "1973:5:0",
+												"nodeType": "VariableDeclaration",
+												"scope": 44,
+												"src": "1957:21:0",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 36,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "1957:7:0",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 39,
+												"indexed": true,
+												"mutability": "mutable",
+												"name": "spender",
+												"nameLocation": "2004:7:0",
+												"nodeType": "VariableDeclaration",
+												"scope": 44,
+												"src": "1988:23:0",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 38,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "1988:7:0",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 42,
+												"indexed": false,
+												"mutability": "mutable",
+												"name": "methods",
+												"nameLocation": "2030:7:0",
+												"nodeType": "VariableDeclaration",
+												"scope": 44,
+												"src": "2021:16:0",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_string_memory_ptr_$dyn_memory_ptr",
+													"typeString": "string[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 40,
+														"name": "string",
+														"nodeType": "ElementaryTypeName",
+														"src": "2021:6:0",
+														"typeDescriptions": {
+															"typeIdentifier": "t_string_storage_ptr",
+															"typeString": "string"
+														}
+													},
+													"id": 41,
+													"nodeType": "ArrayTypeName",
+													"src": "2021:8:0",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_string_storage_$dyn_storage_ptr",
+														"typeString": "string[]"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "1947:96:0"
+									},
+									"src": "1931:113:0"
+								}
+							],
+							"scope": 46,
+							"src": "222:1824:0",
+							"usedErrors": []
+						}
+					],
+					"src": "36:2011:0"
+				},
+				"id": 0
+			},
+			"contracts/common/Types.sol": {
+				"ast": {
+					"absolutePath": "contracts/common/Types.sol",
+					"exportedSymbols": {
+						"Coin": [
+							57
+						],
+						"Dec": [
+							52
+						],
+						"DecCoin": [
+							64
+						],
+						"PageResponse": [
+							69
+						]
+					},
+					"id": 70,
+					"license": "LGPL-v3",
+					"nodeType": "SourceUnit",
+					"nodes": [
+						{
+							"id": 47,
+							"literals": [
+								"solidity",
+								">=",
+								"0.8",
+								".17"
+							],
+							"nodeType": "PragmaDirective",
+							"src": "36:25:1"
+						},
+						{
+							"canonicalName": "Dec",
+							"id": 52,
+							"members": [
+								{
+									"constant": false,
+									"id": 49,
+									"mutability": "mutable",
+									"name": "value",
+									"nameLocation": "88:5:1",
+									"nodeType": "VariableDeclaration",
+									"scope": 52,
+									"src": "80:13:1",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_uint256",
+										"typeString": "uint256"
+									},
+									"typeName": {
+										"id": 48,
+										"name": "uint256",
+										"nodeType": "ElementaryTypeName",
+										"src": "80:7:1",
+										"typeDescriptions": {
+											"typeIdentifier": "t_uint256",
+											"typeString": "uint256"
+										}
+									},
+									"visibility": "internal"
+								},
+								{
+									"constant": false,
+									"id": 51,
+									"mutability": "mutable",
+									"name": "precision",
+									"nameLocation": "105:9:1",
+									"nodeType": "VariableDeclaration",
+									"scope": 52,
+									"src": "99:15:1",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_uint8",
+										"typeString": "uint8"
+									},
+									"typeName": {
+										"id": 50,
+										"name": "uint8",
+										"nodeType": "ElementaryTypeName",
+										"src": "99:5:1",
+										"typeDescriptions": {
+											"typeIdentifier": "t_uint8",
+											"typeString": "uint8"
+										}
+									},
+									"visibility": "internal"
+								}
+							],
+							"name": "Dec",
+							"nameLocation": "70:3:1",
+							"nodeType": "StructDefinition",
+							"scope": 70,
+							"src": "63:54:1",
+							"visibility": "public"
+						},
+						{
+							"canonicalName": "Coin",
+							"id": 57,
+							"members": [
+								{
+									"constant": false,
+									"id": 54,
+									"mutability": "mutable",
+									"name": "denom",
+									"nameLocation": "229:5:1",
+									"nodeType": "VariableDeclaration",
+									"scope": 57,
+									"src": "222:12:1",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_string_storage_ptr",
+										"typeString": "string"
+									},
+									"typeName": {
+										"id": 53,
+										"name": "string",
+										"nodeType": "ElementaryTypeName",
+										"src": "222:6:1",
+										"typeDescriptions": {
+											"typeIdentifier": "t_string_storage_ptr",
+											"typeString": "string"
+										}
+									},
+									"visibility": "internal"
+								},
+								{
+									"constant": false,
+									"id": 56,
+									"mutability": "mutable",
+									"name": "amount",
+									"nameLocation": "248:6:1",
+									"nodeType": "VariableDeclaration",
+									"scope": 57,
+									"src": "240:14:1",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_uint256",
+										"typeString": "uint256"
+									},
+									"typeName": {
+										"id": 55,
+										"name": "uint256",
+										"nodeType": "ElementaryTypeName",
+										"src": "240:7:1",
+										"typeDescriptions": {
+											"typeIdentifier": "t_uint256",
+											"typeString": "uint256"
+										}
+									},
+									"visibility": "internal"
+								}
+							],
+							"name": "Coin",
+							"nameLocation": "211:4:1",
+							"nodeType": "StructDefinition",
+							"scope": 70,
+							"src": "204:53:1",
+							"visibility": "public"
+						},
+						{
+							"canonicalName": "DecCoin",
+							"id": 64,
+							"members": [
+								{
+									"constant": false,
+									"id": 59,
+									"mutability": "mutable",
+									"name": "denom",
+									"nameLocation": "388:5:1",
+									"nodeType": "VariableDeclaration",
+									"scope": 64,
+									"src": "381:12:1",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_string_storage_ptr",
+										"typeString": "string"
+									},
+									"typeName": {
+										"id": 58,
+										"name": "string",
+										"nodeType": "ElementaryTypeName",
+										"src": "381:6:1",
+										"typeDescriptions": {
+											"typeIdentifier": "t_string_storage_ptr",
+											"typeString": "string"
+										}
+									},
+									"visibility": "internal"
+								},
+								{
+									"constant": false,
+									"id": 61,
+									"mutability": "mutable",
+									"name": "amount",
+									"nameLocation": "407:6:1",
+									"nodeType": "VariableDeclaration",
+									"scope": 64,
+									"src": "399:14:1",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_uint256",
+										"typeString": "uint256"
+									},
+									"typeName": {
+										"id": 60,
+										"name": "uint256",
+										"nodeType": "ElementaryTypeName",
+										"src": "399:7:1",
+										"typeDescriptions": {
+											"typeIdentifier": "t_uint256",
+											"typeString": "uint256"
+										}
+									},
+									"visibility": "internal"
+								},
+								{
+									"constant": false,
+									"id": 63,
+									"mutability": "mutable",
+									"name": "precision",
+									"nameLocation": "425:9:1",
+									"nodeType": "VariableDeclaration",
+									"scope": 64,
+									"src": "419:15:1",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_uint8",
+										"typeString": "uint8"
+									},
+									"typeName": {
+										"id": 62,
+										"name": "uint8",
+										"nodeType": "ElementaryTypeName",
+										"src": "419:5:1",
+										"typeDescriptions": {
+											"typeIdentifier": "t_uint8",
+											"typeString": "uint8"
+										}
+									},
+									"visibility": "internal"
+								}
+							],
+							"name": "DecCoin",
+							"nameLocation": "367:7:1",
+							"nodeType": "StructDefinition",
+							"scope": 70,
+							"src": "360:77:1",
+							"visibility": "public"
+						},
+						{
+							"canonicalName": "PageResponse",
+							"id": 69,
+							"members": [
+								{
+									"constant": false,
+									"id": 66,
+									"mutability": "mutable",
+									"name": "nextKey",
+									"nameLocation": "538:7:1",
+									"nodeType": "VariableDeclaration",
+									"scope": 69,
+									"src": "532:13:1",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_bytes_storage_ptr",
+										"typeString": "bytes"
+									},
+									"typeName": {
+										"id": 65,
+										"name": "bytes",
+										"nodeType": "ElementaryTypeName",
+										"src": "532:5:1",
+										"typeDescriptions": {
+											"typeIdentifier": "t_bytes_storage_ptr",
+											"typeString": "bytes"
+										}
+									},
+									"visibility": "internal"
+								},
+								{
+									"constant": false,
+									"id": 68,
+									"mutability": "mutable",
+									"name": "total",
+									"nameLocation": "558:5:1",
+									"nodeType": "VariableDeclaration",
+									"scope": 69,
+									"src": "551:12:1",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_uint64",
+										"typeString": "uint64"
+									},
+									"typeName": {
+										"id": 67,
+										"name": "uint64",
+										"nodeType": "ElementaryTypeName",
+										"src": "551:6:1",
+										"typeDescriptions": {
+											"typeIdentifier": "t_uint64",
+											"typeString": "uint64"
+										}
+									},
+									"visibility": "internal"
+								}
+							],
+							"name": "PageResponse",
+							"nameLocation": "513:12:1",
+							"nodeType": "StructDefinition",
+							"scope": 70,
+							"src": "506:60:1",
+							"visibility": "public"
+						}
+					],
+					"src": "36:531:1"
+				},
+				"id": 1
+			},
+			"contracts/stateful/Distribution.sol": {
+				"ast": {
+					"absolutePath": "contracts/stateful/Distribution.sol",
+					"exportedSymbols": {
+						"Coin": [
+							57
+						],
+						"DISTRIBUTION_CONTRACT": [
+							94
+						],
+						"DISTRIBUTION_PRECOMPILE_ADDRESS": [
+							77
+						],
+						"Dec": [
+							52
+						],
+						"DecCoin": [
+							64
+						],
+						"DelegationDelegatorReward": [
+							118
+						],
+						"DistributionI": [
+							267
+						],
+						"MSG_SET_WITHDRAWER_ADDRESS": [
+							81
+						],
+						"MSG_WITHDRAW_DELEGATOR_REWARD": [
+							84
+						],
+						"MSG_WITHDRAW_VALIDATOR_COMMISSION": [
+							87
+						],
+						"PageResponse": [
+							69
+						],
+						"ValidatorDistributionInfo": [
+							111
+						],
+						"ValidatorSlashEvent": [
+							100
+						],
+						"genericAuth": [
+							72
+						]
+					},
+					"id": 268,
+					"license": "LGPL-v3",
+					"nodeType": "SourceUnit",
+					"nodes": [
+						{
+							"id": 71,
+							"literals": [
+								"solidity",
+								">=",
+								"0.8",
+								".17",
+								".0"
+							],
+							"nodeType": "PragmaDirective",
+							"src": "36:28:2"
+						},
+						{
+							"absolutePath": "contracts/common/GenericAuthorization.sol",
+							"file": "../common/GenericAuthorization.sol",
+							"id": 72,
+							"nameLocation": "113:11:2",
+							"nodeType": "ImportDirective",
+							"scope": 268,
+							"sourceUnit": 46,
+							"src": "66:59:2",
+							"symbolAliases": [],
+							"unitAlias": "genericAuth"
+						},
+						{
+							"absolutePath": "contracts/common/Types.sol",
+							"file": "../common/Types.sol",
+							"id": 73,
+							"nameLocation": "-1:-1:-1",
+							"nodeType": "ImportDirective",
+							"scope": 268,
+							"sourceUnit": 70,
+							"src": "126:29:2",
+							"symbolAliases": [],
+							"unitAlias": ""
+						},
+						{
+							"constant": true,
+							"id": 77,
+							"mutability": "constant",
+							"name": "DISTRIBUTION_PRECOMPILE_ADDRESS",
+							"nameLocation": "221:31:2",
+							"nodeType": "VariableDeclaration",
+							"scope": 268,
+							"src": "204:93:2",
+							"stateVariable": false,
+							"storageLocation": "default",
+							"typeDescriptions": {
+								"typeIdentifier": "t_address",
+								"typeString": "address"
+							},
+							"typeName": {
+								"id": 75,
+								"name": "address",
+								"nodeType": "ElementaryTypeName",
+								"src": "204:7:2",
+								"stateMutability": "nonpayable",
+								"typeDescriptions": {
+									"typeIdentifier": "t_address",
+									"typeString": "address"
+								}
+							},
+							"value": {
+								"hexValue": "307830303030303030303030303030303030303030303030303030303030303030303030303030383031",
+								"id": 76,
+								"isConstant": false,
+								"isLValue": false,
+								"isPure": true,
+								"kind": "number",
+								"lValueRequested": false,
+								"nodeType": "Literal",
+								"src": "255:42:2",
+								"typeDescriptions": {
+									"typeIdentifier": "t_address",
+									"typeString": "address"
+								},
+								"value": "0x0000000000000000000000000000000000000801"
+							},
+							"visibility": "internal"
+						},
+						{
+							"constant": true,
+							"id": 81,
+							"mutability": "constant",
+							"name": "MSG_SET_WITHDRAWER_ADDRESS",
+							"nameLocation": "372:26:2",
+							"nodeType": "VariableDeclaration",
+							"scope": 268,
+							"src": "356:97:2",
+							"stateVariable": false,
+							"storageLocation": "default",
+							"typeDescriptions": {
+								"typeIdentifier": "t_string_memory_ptr",
+								"typeString": "string"
+							},
+							"typeName": {
+								"id": 79,
+								"name": "string",
+								"nodeType": "ElementaryTypeName",
+								"src": "356:6:2",
+								"typeDescriptions": {
+									"typeIdentifier": "t_string_storage_ptr",
+									"typeString": "string"
+								}
+							},
+							"value": {
+								"hexValue": "2f636f736d6f732e646973747269627574696f6e2e763162657461312e4d7367536574576974686472617741646472657373",
+								"id": 80,
+								"isConstant": false,
+								"isLValue": false,
+								"isPure": true,
+								"kind": "string",
+								"lValueRequested": false,
+								"nodeType": "Literal",
+								"src": "401:52:2",
+								"typeDescriptions": {
+									"typeIdentifier": "t_stringliteral_676444a09bae852212733c06aa01b4fb509c69e94cfae86e091c82c9b8092262",
+									"typeString": "literal_string \"/cosmos.distribution.v1beta1.MsgSetWithdrawAddress\""
+								},
+								"value": "/cosmos.distribution.v1beta1.MsgSetWithdrawAddress"
+							},
+							"visibility": "internal"
+						},
+						{
+							"constant": true,
+							"id": 84,
+							"mutability": "constant",
+							"name": "MSG_WITHDRAW_DELEGATOR_REWARD",
+							"nameLocation": "471:29:2",
+							"nodeType": "VariableDeclaration",
+							"scope": 268,
+							"src": "455:105:2",
+							"stateVariable": false,
+							"storageLocation": "default",
+							"typeDescriptions": {
+								"typeIdentifier": "t_string_memory_ptr",
+								"typeString": "string"
+							},
+							"typeName": {
+								"id": 82,
+								"name": "string",
+								"nodeType": "ElementaryTypeName",
+								"src": "455:6:2",
+								"typeDescriptions": {
+									"typeIdentifier": "t_string_storage_ptr",
+									"typeString": "string"
+								}
+							},
+							"value": {
+								"hexValue": "2f636f736d6f732e646973747269627574696f6e2e763162657461312e4d7367576974686472617744656c656761746f72526577617264",
+								"id": 83,
+								"isConstant": false,
+								"isLValue": false,
+								"isPure": true,
+								"kind": "string",
+								"lValueRequested": false,
+								"nodeType": "Literal",
+								"src": "503:57:2",
+								"typeDescriptions": {
+									"typeIdentifier": "t_stringliteral_a80ac1de3135a636726973fe89306b48710e1e16488d89fb49580776524185b3",
+									"typeString": "literal_string \"/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward\""
+								},
+								"value": "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward"
+							},
+							"visibility": "internal"
+						},
+						{
+							"constant": true,
+							"id": 87,
+							"mutability": "constant",
+							"name": "MSG_WITHDRAW_VALIDATOR_COMMISSION",
+							"nameLocation": "578:33:2",
+							"nodeType": "VariableDeclaration",
+							"scope": 268,
+							"src": "562:113:2",
+							"stateVariable": false,
+							"storageLocation": "default",
+							"typeDescriptions": {
+								"typeIdentifier": "t_string_memory_ptr",
+								"typeString": "string"
+							},
+							"typeName": {
+								"id": 85,
+								"name": "string",
+								"nodeType": "ElementaryTypeName",
+								"src": "562:6:2",
+								"typeDescriptions": {
+									"typeIdentifier": "t_string_storage_ptr",
+									"typeString": "string"
+								}
+							},
+							"value": {
+								"hexValue": "2f636f736d6f732e646973747269627574696f6e2e763162657461312e4d7367576974686472617756616c696461746f72436f6d6d697373696f6e",
+								"id": 86,
+								"isConstant": false,
+								"isLValue": false,
+								"isPure": true,
+								"kind": "string",
+								"lValueRequested": false,
+								"nodeType": "Literal",
+								"src": "614:61:2",
+								"typeDescriptions": {
+									"typeIdentifier": "t_stringliteral_ffe1bf93f0fe502fb0f961db98fe854ee1fd6d2519e43ee67a536717ae34be1b",
+									"typeString": "literal_string \"/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission\""
+								},
+								"value": "/cosmos.distribution.v1beta1.MsgWithdrawValidatorCommission"
+							},
+							"visibility": "internal"
+						},
+						{
+							"constant": true,
+							"id": 94,
+							"mutability": "constant",
+							"name": "DISTRIBUTION_CONTRACT",
+							"nameLocation": "749:21:2",
+							"nodeType": "VariableDeclaration",
+							"scope": 268,
+							"src": "726:93:2",
+							"stateVariable": false,
+							"storageLocation": "default",
+							"typeDescriptions": {
+								"typeIdentifier": "t_contract$_DistributionI_$267",
+								"typeString": "contract DistributionI"
+							},
+							"typeName": {
+								"id": 90,
+								"nodeType": "UserDefinedTypeName",
+								"pathNode": {
+									"id": 89,
+									"name": "DistributionI",
+									"nameLocations": [
+										"726:13:2"
+									],
+									"nodeType": "IdentifierPath",
+									"referencedDeclaration": 267,
+									"src": "726:13:2"
+								},
+								"referencedDeclaration": 267,
+								"src": "726:13:2",
+								"typeDescriptions": {
+									"typeIdentifier": "t_contract$_DistributionI_$267",
+									"typeString": "contract DistributionI"
+								}
+							},
+							"value": {
+								"arguments": [
+									{
+										"id": 92,
+										"name": "DISTRIBUTION_PRECOMPILE_ADDRESS",
+										"nodeType": "Identifier",
+										"overloadedDeclarations": [],
+										"referencedDeclaration": 77,
+										"src": "787:31:2",
+										"typeDescriptions": {
+											"typeIdentifier": "t_address",
+											"typeString": "address"
+										}
+									}
+								],
+								"expression": {
+									"argumentTypes": [
+										{
+											"typeIdentifier": "t_address",
+											"typeString": "address"
+										}
+									],
+									"id": 91,
+									"name": "DistributionI",
+									"nodeType": "Identifier",
+									"overloadedDeclarations": [],
+									"referencedDeclaration": 267,
+									"src": "773:13:2",
+									"typeDescriptions": {
+										"typeIdentifier": "t_type$_t_contract$_DistributionI_$267_$",
+										"typeString": "type(contract DistributionI)"
+									}
+								},
+								"id": 93,
+								"isConstant": false,
+								"isLValue": false,
+								"isPure": true,
+								"kind": "typeConversion",
+								"lValueRequested": false,
+								"nameLocations": [],
+								"names": [],
+								"nodeType": "FunctionCall",
+								"src": "773:46:2",
+								"tryCall": false,
+								"typeDescriptions": {
+									"typeIdentifier": "t_contract$_DistributionI_$267",
+									"typeString": "contract DistributionI"
+								}
+							},
+							"visibility": "internal"
+						},
+						{
+							"canonicalName": "ValidatorSlashEvent",
+							"id": 100,
+							"members": [
+								{
+									"constant": false,
+									"id": 96,
+									"mutability": "mutable",
+									"name": "validatorPeriod",
+									"nameLocation": "862:15:2",
+									"nodeType": "VariableDeclaration",
+									"scope": 100,
+									"src": "855:22:2",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_uint64",
+										"typeString": "uint64"
+									},
+									"typeName": {
+										"id": 95,
+										"name": "uint64",
+										"nodeType": "ElementaryTypeName",
+										"src": "855:6:2",
+										"typeDescriptions": {
+											"typeIdentifier": "t_uint64",
+											"typeString": "uint64"
+										}
+									},
+									"visibility": "internal"
+								},
+								{
+									"constant": false,
+									"id": 99,
+									"mutability": "mutable",
+									"name": "fraction",
+									"nameLocation": "887:8:2",
+									"nodeType": "VariableDeclaration",
+									"scope": 100,
+									"src": "883:12:2",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_struct$_Dec_$52_storage_ptr",
+										"typeString": "struct Dec"
+									},
+									"typeName": {
+										"id": 98,
+										"nodeType": "UserDefinedTypeName",
+										"pathNode": {
+											"id": 97,
+											"name": "Dec",
+											"nameLocations": [
+												"883:3:2"
+											],
+											"nodeType": "IdentifierPath",
+											"referencedDeclaration": 52,
+											"src": "883:3:2"
+										},
+										"referencedDeclaration": 52,
+										"src": "883:3:2",
+										"typeDescriptions": {
+											"typeIdentifier": "t_struct$_Dec_$52_storage_ptr",
+											"typeString": "struct Dec"
+										}
+									},
+									"visibility": "internal"
+								}
+							],
+							"name": "ValidatorSlashEvent",
+							"nameLocation": "829:19:2",
+							"nodeType": "StructDefinition",
+							"scope": 268,
+							"src": "822:76:2",
+							"visibility": "public"
+						},
+						{
+							"canonicalName": "ValidatorDistributionInfo",
+							"id": 111,
+							"members": [
+								{
+									"constant": false,
+									"id": 102,
+									"mutability": "mutable",
+									"name": "operatorAddress",
+									"nameLocation": "946:15:2",
+									"nodeType": "VariableDeclaration",
+									"scope": 111,
+									"src": "939:22:2",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_string_storage_ptr",
+										"typeString": "string"
+									},
+									"typeName": {
+										"id": 101,
+										"name": "string",
+										"nodeType": "ElementaryTypeName",
+										"src": "939:6:2",
+										"typeDescriptions": {
+											"typeIdentifier": "t_string_storage_ptr",
+											"typeString": "string"
+										}
+									},
+									"visibility": "internal"
+								},
+								{
+									"constant": false,
+									"id": 106,
+									"mutability": "mutable",
+									"name": "selfBondRewards",
+									"nameLocation": "977:15:2",
+									"nodeType": "VariableDeclaration",
+									"scope": 111,
+									"src": "967:25:2",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_storage_$dyn_storage_ptr",
+										"typeString": "struct DecCoin[]"
+									},
+									"typeName": {
+										"baseType": {
+											"id": 104,
+											"nodeType": "UserDefinedTypeName",
+											"pathNode": {
+												"id": 103,
+												"name": "DecCoin",
+												"nameLocations": [
+													"967:7:2"
+												],
+												"nodeType": "IdentifierPath",
+												"referencedDeclaration": 64,
+												"src": "967:7:2"
+											},
+											"referencedDeclaration": 64,
+											"src": "967:7:2",
+											"typeDescriptions": {
+												"typeIdentifier": "t_struct$_DecCoin_$64_storage_ptr",
+												"typeString": "struct DecCoin"
+											}
+										},
+										"id": 105,
+										"nodeType": "ArrayTypeName",
+										"src": "967:9:2",
+										"typeDescriptions": {
+											"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_storage_$dyn_storage_ptr",
+											"typeString": "struct DecCoin[]"
+										}
+									},
+									"visibility": "internal"
+								},
+								{
+									"constant": false,
+									"id": 110,
+									"mutability": "mutable",
+									"name": "commission",
+									"nameLocation": "1008:10:2",
+									"nodeType": "VariableDeclaration",
+									"scope": 111,
+									"src": "998:20:2",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_storage_$dyn_storage_ptr",
+										"typeString": "struct DecCoin[]"
+									},
+									"typeName": {
+										"baseType": {
+											"id": 108,
+											"nodeType": "UserDefinedTypeName",
+											"pathNode": {
+												"id": 107,
+												"name": "DecCoin",
+												"nameLocations": [
+													"998:7:2"
+												],
+												"nodeType": "IdentifierPath",
+												"referencedDeclaration": 64,
+												"src": "998:7:2"
+											},
+											"referencedDeclaration": 64,
+											"src": "998:7:2",
+											"typeDescriptions": {
+												"typeIdentifier": "t_struct$_DecCoin_$64_storage_ptr",
+												"typeString": "struct DecCoin"
+											}
+										},
+										"id": 109,
+										"nodeType": "ArrayTypeName",
+										"src": "998:9:2",
+										"typeDescriptions": {
+											"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_storage_$dyn_storage_ptr",
+											"typeString": "struct DecCoin[]"
+										}
+									},
+									"visibility": "internal"
+								}
+							],
+							"name": "ValidatorDistributionInfo",
+							"nameLocation": "907:25:2",
+							"nodeType": "StructDefinition",
+							"scope": 268,
+							"src": "900:121:2",
+							"visibility": "public"
+						},
+						{
+							"canonicalName": "DelegationDelegatorReward",
+							"id": 118,
+							"members": [
+								{
+									"constant": false,
+									"id": 113,
+									"mutability": "mutable",
+									"name": "validatorAddress",
+									"nameLocation": "1069:16:2",
+									"nodeType": "VariableDeclaration",
+									"scope": 118,
+									"src": "1062:23:2",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_string_storage_ptr",
+										"typeString": "string"
+									},
+									"typeName": {
+										"id": 112,
+										"name": "string",
+										"nodeType": "ElementaryTypeName",
+										"src": "1062:6:2",
+										"typeDescriptions": {
+											"typeIdentifier": "t_string_storage_ptr",
+											"typeString": "string"
+										}
+									},
+									"visibility": "internal"
+								},
+								{
+									"constant": false,
+									"id": 117,
+									"mutability": "mutable",
+									"name": "reward",
+									"nameLocation": "1101:6:2",
+									"nodeType": "VariableDeclaration",
+									"scope": 118,
+									"src": "1091:16:2",
+									"stateVariable": false,
+									"storageLocation": "default",
+									"typeDescriptions": {
+										"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_storage_$dyn_storage_ptr",
+										"typeString": "struct DecCoin[]"
+									},
+									"typeName": {
+										"baseType": {
+											"id": 115,
+											"nodeType": "UserDefinedTypeName",
+											"pathNode": {
+												"id": 114,
+												"name": "DecCoin",
+												"nameLocations": [
+													"1091:7:2"
+												],
+												"nodeType": "IdentifierPath",
+												"referencedDeclaration": 64,
+												"src": "1091:7:2"
+											},
+											"referencedDeclaration": 64,
+											"src": "1091:7:2",
+											"typeDescriptions": {
+												"typeIdentifier": "t_struct$_DecCoin_$64_storage_ptr",
+												"typeString": "struct DecCoin"
+											}
+										},
+										"id": 116,
+										"nodeType": "ArrayTypeName",
+										"src": "1091:9:2",
+										"typeDescriptions": {
+											"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_storage_$dyn_storage_ptr",
+											"typeString": "struct DecCoin[]"
+										}
+									},
+									"visibility": "internal"
+								}
+							],
+							"name": "DelegationDelegatorReward",
+							"nameLocation": "1030:25:2",
+							"nodeType": "StructDefinition",
+							"scope": 268,
+							"src": "1023:87:2",
+							"visibility": "public"
+						},
+						{
+							"abstract": false,
+							"baseContracts": [
+								{
+									"baseName": {
+										"id": 120,
+										"name": "genericAuth.GenericAuthorizationI",
+										"nameLocations": [
+											"1357:11:2",
+											"1369:21:2"
+										],
+										"nodeType": "IdentifierPath",
+										"referencedDeclaration": 45,
+										"src": "1357:33:2"
+									},
+									"id": 121,
+									"nodeType": "InheritanceSpecifier",
+									"src": "1357:33:2"
+								}
+							],
+							"canonicalName": "DistributionI",
+							"contractDependencies": [],
+							"contractKind": "interface",
+							"documentation": {
+								"id": 119,
+								"nodeType": "StructuredDocumentation",
+								"src": "1112:218:2",
+								"text": "@author Evmos Team\n @title Distribution Precompile Contract\n @dev The interface through which solidity contracts will interact with Distribution\n @custom:address 0x0000000000000000000000000000000000000801"
+							},
+							"fullyImplemented": false,
+							"id": 267,
+							"linearizedBaseContracts": [
+								267,
+								45
+							],
+							"name": "DistributionI",
+							"nameLocation": "1340:13:2",
+							"nodeType": "ContractDefinition",
+							"nodes": [
+								{
+									"documentation": {
+										"id": 122,
+										"nodeType": "StructuredDocumentation",
+										"src": "1397:344:2",
+										"text": "TRANSACTIONS\n @dev Change the address, that can withdraw the rewards of a delegator.\n Note that this address cannot be a module account.\n @param delegatorAddress The address of the delegator\n @param withdrawerAddress The address that will be capable of withdrawing rewards for\n the given delegator address"
+									},
+									"functionSelector": "5a9d9a96",
+									"id": 131,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "setWithdrawAddress",
+									"nameLocation": "1755:18:2",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 127,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 124,
+												"mutability": "mutable",
+												"name": "delegatorAddress",
+												"nameLocation": "1791:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 131,
+												"src": "1783:24:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 123,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "1783:7:2",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 126,
+												"mutability": "mutable",
+												"name": "withdrawerAddress",
+												"nameLocation": "1831:17:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 131,
+												"src": "1817:31:2",
+												"stateVariable": false,
+												"storageLocation": "memory",
+												"typeDescriptions": {
+													"typeIdentifier": "t_string_memory_ptr",
+													"typeString": "string"
+												},
+												"typeName": {
+													"id": 125,
+													"name": "string",
+													"nodeType": "ElementaryTypeName",
+													"src": "1817:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_string_storage_ptr",
+														"typeString": "string"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "1773:81:2"
+									},
+									"returnParameters": {
+										"id": 130,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 129,
+												"mutability": "mutable",
+												"name": "success",
+												"nameLocation": "1878:7:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 131,
+												"src": "1873:12:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_bool",
+													"typeString": "bool"
+												},
+												"typeName": {
+													"id": 128,
+													"name": "bool",
+													"nodeType": "ElementaryTypeName",
+													"src": "1873:4:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_bool",
+														"typeString": "bool"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "1872:14:2"
+									},
+									"scope": 267,
+									"src": "1746:141:2",
+									"stateMutability": "nonpayable",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"documentation": {
+										"id": 132,
+										"nodeType": "StructuredDocumentation",
+										"src": "1893:235:2",
+										"text": "@dev Withdraw the rewards of a delegator from a validator\n @param delegatorAddress The address of the delegator\n @param validatorAddress The address of the validator\n @return amount The amount of Coin withdrawn"
+									},
+									"functionSelector": "b46a8d61",
+									"id": 143,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "withdrawDelegatorRewards",
+									"nameLocation": "2142:24:2",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 137,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 134,
+												"mutability": "mutable",
+												"name": "delegatorAddress",
+												"nameLocation": "2184:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 143,
+												"src": "2176:24:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 133,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "2176:7:2",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 136,
+												"mutability": "mutable",
+												"name": "validatorAddress",
+												"nameLocation": "2224:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 143,
+												"src": "2210:30:2",
+												"stateVariable": false,
+												"storageLocation": "memory",
+												"typeDescriptions": {
+													"typeIdentifier": "t_string_memory_ptr",
+													"typeString": "string"
+												},
+												"typeName": {
+													"id": 135,
+													"name": "string",
+													"nodeType": "ElementaryTypeName",
+													"src": "2210:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_string_storage_ptr",
+														"typeString": "string"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "2166:80:2"
+									},
+									"returnParameters": {
+										"id": 142,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 141,
+												"mutability": "mutable",
+												"name": "amount",
+												"nameLocation": "2298:6:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 143,
+												"src": "2282:22:2",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_struct$_Coin_$57_calldata_ptr_$dyn_calldata_ptr",
+													"typeString": "struct Coin[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 139,
+														"nodeType": "UserDefinedTypeName",
+														"pathNode": {
+															"id": 138,
+															"name": "Coin",
+															"nameLocations": [
+																"2282:4:2"
+															],
+															"nodeType": "IdentifierPath",
+															"referencedDeclaration": 57,
+															"src": "2282:4:2"
+														},
+														"referencedDeclaration": 57,
+														"src": "2282:4:2",
+														"typeDescriptions": {
+															"typeIdentifier": "t_struct$_Coin_$57_storage_ptr",
+															"typeString": "struct Coin"
+														}
+													},
+													"id": 140,
+													"nodeType": "ArrayTypeName",
+													"src": "2282:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_struct$_Coin_$57_storage_$dyn_storage_ptr",
+														"typeString": "struct Coin[]"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "2272:38:2"
+									},
+									"scope": 267,
+									"src": "2133:178:2",
+									"stateMutability": "nonpayable",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"documentation": {
+										"id": 144,
+										"nodeType": "StructuredDocumentation",
+										"src": "2317:170:2",
+										"text": "@dev Withdraws the rewards commission of a validator.\n @param validatorAddress The address of the validator\n @return amount The amount of Coin withdrawn"
+									},
+									"functionSelector": "3ce4e3be",
+									"id": 153,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "withdrawValidatorCommission",
+									"nameLocation": "2501:27:2",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 147,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 146,
+												"mutability": "mutable",
+												"name": "validatorAddress",
+												"nameLocation": "2552:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 153,
+												"src": "2538:30:2",
+												"stateVariable": false,
+												"storageLocation": "memory",
+												"typeDescriptions": {
+													"typeIdentifier": "t_string_memory_ptr",
+													"typeString": "string"
+												},
+												"typeName": {
+													"id": 145,
+													"name": "string",
+													"nodeType": "ElementaryTypeName",
+													"src": "2538:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_string_storage_ptr",
+														"typeString": "string"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "2528:46:2"
+									},
+									"returnParameters": {
+										"id": 152,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 151,
+												"mutability": "mutable",
+												"name": "amount",
+												"nameLocation": "2626:6:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 153,
+												"src": "2610:22:2",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_struct$_Coin_$57_calldata_ptr_$dyn_calldata_ptr",
+													"typeString": "struct Coin[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 149,
+														"nodeType": "UserDefinedTypeName",
+														"pathNode": {
+															"id": 148,
+															"name": "Coin",
+															"nameLocations": [
+																"2610:4:2"
+															],
+															"nodeType": "IdentifierPath",
+															"referencedDeclaration": 57,
+															"src": "2610:4:2"
+														},
+														"referencedDeclaration": 57,
+														"src": "2610:4:2",
+														"typeDescriptions": {
+															"typeIdentifier": "t_struct$_Coin_$57_storage_ptr",
+															"typeString": "struct Coin"
+														}
+													},
+													"id": 150,
+													"nodeType": "ArrayTypeName",
+													"src": "2610:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_struct$_Coin_$57_storage_$dyn_storage_ptr",
+														"typeString": "struct Coin[]"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "2600:38:2"
+									},
+									"scope": 267,
+									"src": "2492:147:2",
+									"stateMutability": "nonpayable",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"documentation": {
+										"id": 154,
+										"nodeType": "StructuredDocumentation",
+										"src": "2645:224:2",
+										"text": "QUERIES\n @dev Queries validator commission and self-delegation rewards for validator.\n @param validatorAddress The address of the validator\n @return distributionInfo The validator's distribution info"
+									},
+									"functionSelector": "54212a89",
+									"id": 163,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "validatorDistributionInfo",
+									"nameLocation": "2883:25:2",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 157,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 156,
+												"mutability": "mutable",
+												"name": "validatorAddress",
+												"nameLocation": "2932:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 163,
+												"src": "2918:30:2",
+												"stateVariable": false,
+												"storageLocation": "memory",
+												"typeDescriptions": {
+													"typeIdentifier": "t_string_memory_ptr",
+													"typeString": "string"
+												},
+												"typeName": {
+													"id": 155,
+													"name": "string",
+													"nodeType": "ElementaryTypeName",
+													"src": "2918:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_string_storage_ptr",
+														"typeString": "string"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "2908:46:2"
+									},
+									"returnParameters": {
+										"id": 162,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 161,
+												"mutability": "mutable",
+												"name": "distributionInfo",
+												"nameLocation": "3036:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 163,
+												"src": "2999:53:2",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_struct$_ValidatorDistributionInfo_$111_calldata_ptr_$dyn_calldata_ptr",
+													"typeString": "struct ValidatorDistributionInfo[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 159,
+														"nodeType": "UserDefinedTypeName",
+														"pathNode": {
+															"id": 158,
+															"name": "ValidatorDistributionInfo",
+															"nameLocations": [
+																"2999:25:2"
+															],
+															"nodeType": "IdentifierPath",
+															"referencedDeclaration": 111,
+															"src": "2999:25:2"
+														},
+														"referencedDeclaration": 111,
+														"src": "2999:25:2",
+														"typeDescriptions": {
+															"typeIdentifier": "t_struct$_ValidatorDistributionInfo_$111_storage_ptr",
+															"typeString": "struct ValidatorDistributionInfo"
+														}
+													},
+													"id": 160,
+													"nodeType": "ArrayTypeName",
+													"src": "2999:27:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_struct$_ValidatorDistributionInfo_$111_storage_$dyn_storage_ptr",
+														"typeString": "struct ValidatorDistributionInfo[]"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "2989:104:2"
+									},
+									"scope": 267,
+									"src": "2874:220:2",
+									"stateMutability": "view",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"documentation": {
+										"id": 164,
+										"nodeType": "StructuredDocumentation",
+										"src": "3100:185:2",
+										"text": "@dev Queries the outstanding rewards of a validator address.\n @param validatorAddress The address of the validator\n @return rewards The validator's outstanding rewards"
+									},
+									"functionSelector": "85b2d2da",
+									"id": 173,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "validatorOutstandingRewards",
+									"nameLocation": "3299:27:2",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 167,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 166,
+												"mutability": "mutable",
+												"name": "validatorAddress",
+												"nameLocation": "3350:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 173,
+												"src": "3336:30:2",
+												"stateVariable": false,
+												"storageLocation": "memory",
+												"typeDescriptions": {
+													"typeIdentifier": "t_string_memory_ptr",
+													"typeString": "string"
+												},
+												"typeName": {
+													"id": 165,
+													"name": "string",
+													"nodeType": "ElementaryTypeName",
+													"src": "3336:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_string_storage_ptr",
+														"typeString": "string"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "3326:46:2"
+									},
+									"returnParameters": {
+										"id": 172,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 171,
+												"mutability": "mutable",
+												"name": "rewards",
+												"nameLocation": "3436:7:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 173,
+												"src": "3417:26:2",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_calldata_ptr_$dyn_calldata_ptr",
+													"typeString": "struct DecCoin[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 169,
+														"nodeType": "UserDefinedTypeName",
+														"pathNode": {
+															"id": 168,
+															"name": "DecCoin",
+															"nameLocations": [
+																"3417:7:2"
+															],
+															"nodeType": "IdentifierPath",
+															"referencedDeclaration": 64,
+															"src": "3417:7:2"
+														},
+														"referencedDeclaration": 64,
+														"src": "3417:7:2",
+														"typeDescriptions": {
+															"typeIdentifier": "t_struct$_DecCoin_$64_storage_ptr",
+															"typeString": "struct DecCoin"
+														}
+													},
+													"id": 170,
+													"nodeType": "ArrayTypeName",
+													"src": "3417:9:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_storage_$dyn_storage_ptr",
+														"typeString": "struct DecCoin[]"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "3407:42:2"
+									},
+									"scope": 267,
+									"src": "3290:160:2",
+									"stateMutability": "view",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"documentation": {
+										"id": 174,
+										"nodeType": "StructuredDocumentation",
+										"src": "3456:175:2",
+										"text": "@dev Queries the accumulated commission for a validator.\n @param validatorAddress The address of the validator\n @return commission The validator's commission"
+									},
+									"functionSelector": "3dd40f78",
+									"id": 183,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "validatorCommission",
+									"nameLocation": "3645:19:2",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 177,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 176,
+												"mutability": "mutable",
+												"name": "validatorAddress",
+												"nameLocation": "3688:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 183,
+												"src": "3674:30:2",
+												"stateVariable": false,
+												"storageLocation": "memory",
+												"typeDescriptions": {
+													"typeIdentifier": "t_string_memory_ptr",
+													"typeString": "string"
+												},
+												"typeName": {
+													"id": 175,
+													"name": "string",
+													"nodeType": "ElementaryTypeName",
+													"src": "3674:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_string_storage_ptr",
+														"typeString": "string"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "3664:46:2"
+									},
+									"returnParameters": {
+										"id": 182,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 181,
+												"mutability": "mutable",
+												"name": "commission",
+												"nameLocation": "3774:10:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 183,
+												"src": "3755:29:2",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_calldata_ptr_$dyn_calldata_ptr",
+													"typeString": "struct DecCoin[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 179,
+														"nodeType": "UserDefinedTypeName",
+														"pathNode": {
+															"id": 178,
+															"name": "DecCoin",
+															"nameLocations": [
+																"3755:7:2"
+															],
+															"nodeType": "IdentifierPath",
+															"referencedDeclaration": 64,
+															"src": "3755:7:2"
+														},
+														"referencedDeclaration": 64,
+														"src": "3755:7:2",
+														"typeDescriptions": {
+															"typeIdentifier": "t_struct$_DecCoin_$64_storage_ptr",
+															"typeString": "struct DecCoin"
+														}
+													},
+													"id": 180,
+													"nodeType": "ArrayTypeName",
+													"src": "3755:9:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_storage_$dyn_storage_ptr",
+														"typeString": "struct DecCoin[]"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "3745:45:2"
+									},
+									"scope": 267,
+									"src": "3636:155:2",
+									"stateMutability": "view",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"documentation": {
+										"id": 184,
+										"nodeType": "StructuredDocumentation",
+										"src": "3797:407:2",
+										"text": "@dev Queries the slashing events for a validator in a given height interval\n defined by the starting and ending height.\n @param validatorAddress The address of the validator\n @param startingHeight The starting height\n @param endingHeight The ending height\n @return slashes The validator's slash events\n @return pageResponse The pagination response for the query"
+									},
+									"functionSelector": "a75395a5",
+									"id": 200,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "validatorSlashes",
+									"nameLocation": "4218:16:2",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 191,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 186,
+												"mutability": "mutable",
+												"name": "validatorAddress",
+												"nameLocation": "4258:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 200,
+												"src": "4244:30:2",
+												"stateVariable": false,
+												"storageLocation": "memory",
+												"typeDescriptions": {
+													"typeIdentifier": "t_string_memory_ptr",
+													"typeString": "string"
+												},
+												"typeName": {
+													"id": 185,
+													"name": "string",
+													"nodeType": "ElementaryTypeName",
+													"src": "4244:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_string_storage_ptr",
+														"typeString": "string"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 188,
+												"mutability": "mutable",
+												"name": "startingHeight",
+												"nameLocation": "4291:14:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 200,
+												"src": "4284:21:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_uint64",
+													"typeString": "uint64"
+												},
+												"typeName": {
+													"id": 187,
+													"name": "uint64",
+													"nodeType": "ElementaryTypeName",
+													"src": "4284:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_uint64",
+														"typeString": "uint64"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 190,
+												"mutability": "mutable",
+												"name": "endingHeight",
+												"nameLocation": "4322:12:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 200,
+												"src": "4315:19:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_uint64",
+													"typeString": "uint64"
+												},
+												"typeName": {
+													"id": 189,
+													"name": "uint64",
+													"nodeType": "ElementaryTypeName",
+													"src": "4315:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_uint64",
+														"typeString": "uint64"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "4234:106:2"
+									},
+									"returnParameters": {
+										"id": 199,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 195,
+												"mutability": "mutable",
+												"name": "slashes",
+												"nameLocation": "4416:7:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 200,
+												"src": "4385:38:2",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_struct$_ValidatorSlashEvent_$100_calldata_ptr_$dyn_calldata_ptr",
+													"typeString": "struct ValidatorSlashEvent[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 193,
+														"nodeType": "UserDefinedTypeName",
+														"pathNode": {
+															"id": 192,
+															"name": "ValidatorSlashEvent",
+															"nameLocations": [
+																"4385:19:2"
+															],
+															"nodeType": "IdentifierPath",
+															"referencedDeclaration": 100,
+															"src": "4385:19:2"
+														},
+														"referencedDeclaration": 100,
+														"src": "4385:19:2",
+														"typeDescriptions": {
+															"typeIdentifier": "t_struct$_ValidatorSlashEvent_$100_storage_ptr",
+															"typeString": "struct ValidatorSlashEvent"
+														}
+													},
+													"id": 194,
+													"nodeType": "ArrayTypeName",
+													"src": "4385:21:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_struct$_ValidatorSlashEvent_$100_storage_$dyn_storage_ptr",
+														"typeString": "struct ValidatorSlashEvent[]"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 198,
+												"mutability": "mutable",
+												"name": "pageResponse",
+												"nameLocation": "4455:12:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 200,
+												"src": "4433:34:2",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_struct$_PageResponse_$69_calldata_ptr",
+													"typeString": "struct PageResponse"
+												},
+												"typeName": {
+													"id": 197,
+													"nodeType": "UserDefinedTypeName",
+													"pathNode": {
+														"id": 196,
+														"name": "PageResponse",
+														"nameLocations": [
+															"4433:12:2"
+														],
+														"nodeType": "IdentifierPath",
+														"referencedDeclaration": 69,
+														"src": "4433:12:2"
+													},
+													"referencedDeclaration": 69,
+													"src": "4433:12:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_struct$_PageResponse_$69_storage_ptr",
+														"typeString": "struct PageResponse"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "4375:98:2"
+									},
+									"scope": 267,
+									"src": "4209:265:2",
+									"stateMutability": "view",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"documentation": {
+										"id": 201,
+										"nodeType": "StructuredDocumentation",
+										"src": "4480:293:2",
+										"text": "@dev Queries the total rewards accrued by a delegation from a specific address to a given validator.\n @param delegatorAddress The address of the delegator\n @param validatorAddress The address of the validator\n @return rewards The total rewards accrued by a delegation."
+									},
+									"functionSelector": "9ad563b4",
+									"id": 212,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "delegationRewards",
+									"nameLocation": "4787:17:2",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 206,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 203,
+												"mutability": "mutable",
+												"name": "delegatorAddress",
+												"nameLocation": "4822:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 212,
+												"src": "4814:24:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 202,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "4814:7:2",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 205,
+												"mutability": "mutable",
+												"name": "validatorAddress",
+												"nameLocation": "4862:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 212,
+												"src": "4848:30:2",
+												"stateVariable": false,
+												"storageLocation": "memory",
+												"typeDescriptions": {
+													"typeIdentifier": "t_string_memory_ptr",
+													"typeString": "string"
+												},
+												"typeName": {
+													"id": 204,
+													"name": "string",
+													"nodeType": "ElementaryTypeName",
+													"src": "4848:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_string_storage_ptr",
+														"typeString": "string"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "4804:80:2"
+									},
+									"returnParameters": {
+										"id": 211,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 210,
+												"mutability": "mutable",
+												"name": "rewards",
+												"nameLocation": "4948:7:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 212,
+												"src": "4929:26:2",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_calldata_ptr_$dyn_calldata_ptr",
+													"typeString": "struct DecCoin[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 208,
+														"nodeType": "UserDefinedTypeName",
+														"pathNode": {
+															"id": 207,
+															"name": "DecCoin",
+															"nameLocations": [
+																"4929:7:2"
+															],
+															"nodeType": "IdentifierPath",
+															"referencedDeclaration": 64,
+															"src": "4929:7:2"
+														},
+														"referencedDeclaration": 64,
+														"src": "4929:7:2",
+														"typeDescriptions": {
+															"typeIdentifier": "t_struct$_DecCoin_$64_storage_ptr",
+															"typeString": "struct DecCoin"
+														}
+													},
+													"id": 209,
+													"nodeType": "ArrayTypeName",
+													"src": "4929:9:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_storage_$dyn_storage_ptr",
+														"typeString": "struct DecCoin[]"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "4919:42:2"
+									},
+									"scope": 267,
+									"src": "4778:184:2",
+									"stateMutability": "view",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"documentation": {
+										"id": 213,
+										"nodeType": "StructuredDocumentation",
+										"src": "4968:318:2",
+										"text": "@dev Queries the total rewards accrued by each validator, that a given\n address has delegated to.\n @param delegatorAddress The address of the delegator\n @return rewards The total rewards accrued by each validator for a delegator.\n @return total The total rewards accrued by a delegator."
+									},
+									"functionSelector": "54be1a28",
+									"id": 226,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "delegationTotalRewards",
+									"nameLocation": "5300:22:2",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 216,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 215,
+												"mutability": "mutable",
+												"name": "delegatorAddress",
+												"nameLocation": "5340:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 226,
+												"src": "5332:24:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 214,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "5332:7:2",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "5322:40:2"
+									},
+									"returnParameters": {
+										"id": 225,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 220,
+												"mutability": "mutable",
+												"name": "rewards",
+												"nameLocation": "5444:7:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 226,
+												"src": "5407:44:2",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_struct$_DelegationDelegatorReward_$118_calldata_ptr_$dyn_calldata_ptr",
+													"typeString": "struct DelegationDelegatorReward[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 218,
+														"nodeType": "UserDefinedTypeName",
+														"pathNode": {
+															"id": 217,
+															"name": "DelegationDelegatorReward",
+															"nameLocations": [
+																"5407:25:2"
+															],
+															"nodeType": "IdentifierPath",
+															"referencedDeclaration": 118,
+															"src": "5407:25:2"
+														},
+														"referencedDeclaration": 118,
+														"src": "5407:25:2",
+														"typeDescriptions": {
+															"typeIdentifier": "t_struct$_DelegationDelegatorReward_$118_storage_ptr",
+															"typeString": "struct DelegationDelegatorReward"
+														}
+													},
+													"id": 219,
+													"nodeType": "ArrayTypeName",
+													"src": "5407:27:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_struct$_DelegationDelegatorReward_$118_storage_$dyn_storage_ptr",
+														"typeString": "struct DelegationDelegatorReward[]"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 224,
+												"mutability": "mutable",
+												"name": "total",
+												"nameLocation": "5480:5:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 226,
+												"src": "5461:24:2",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_calldata_ptr_$dyn_calldata_ptr",
+													"typeString": "struct DecCoin[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 222,
+														"nodeType": "UserDefinedTypeName",
+														"pathNode": {
+															"id": 221,
+															"name": "DecCoin",
+															"nameLocations": [
+																"5461:7:2"
+															],
+															"nodeType": "IdentifierPath",
+															"referencedDeclaration": 64,
+															"src": "5461:7:2"
+														},
+														"referencedDeclaration": 64,
+														"src": "5461:7:2",
+														"typeDescriptions": {
+															"typeIdentifier": "t_struct$_DecCoin_$64_storage_ptr",
+															"typeString": "struct DecCoin"
+														}
+													},
+													"id": 223,
+													"nodeType": "ArrayTypeName",
+													"src": "5461:9:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_struct$_DecCoin_$64_storage_$dyn_storage_ptr",
+														"typeString": "struct DecCoin[]"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "5397:94:2"
+									},
+									"scope": 267,
+									"src": "5291:201:2",
+									"stateMutability": "view",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"documentation": {
+										"id": 227,
+										"nodeType": "StructuredDocumentation",
+										"src": "5498:237:2",
+										"text": "@dev Queries all validators, that a given address has delegated to.\n @param delegatorAddress The address of the delegator\n @return validators The addresses of all validators, that were delegated to by the given address."
+									},
+									"functionSelector": "a66cb605",
+									"id": 235,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "delegatorValidators",
+									"nameLocation": "5749:19:2",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 230,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 229,
+												"mutability": "mutable",
+												"name": "delegatorAddress",
+												"nameLocation": "5786:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 235,
+												"src": "5778:24:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 228,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "5778:7:2",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "5768:40:2"
+									},
+									"returnParameters": {
+										"id": 234,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 233,
+												"mutability": "mutable",
+												"name": "validators",
+												"nameLocation": "5850:10:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 235,
+												"src": "5832:28:2",
+												"stateVariable": false,
+												"storageLocation": "calldata",
+												"typeDescriptions": {
+													"typeIdentifier": "t_array$_t_string_calldata_ptr_$dyn_calldata_ptr",
+													"typeString": "string[]"
+												},
+												"typeName": {
+													"baseType": {
+														"id": 231,
+														"name": "string",
+														"nodeType": "ElementaryTypeName",
+														"src": "5832:6:2",
+														"typeDescriptions": {
+															"typeIdentifier": "t_string_storage_ptr",
+															"typeString": "string"
+														}
+													},
+													"id": 232,
+													"nodeType": "ArrayTypeName",
+													"src": "5832:8:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_array$_t_string_storage_$dyn_storage_ptr",
+														"typeString": "string[]"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "5831:30:2"
+									},
+									"scope": 267,
+									"src": "5740:122:2",
+									"stateMutability": "view",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"documentation": {
+										"id": 236,
+										"nodeType": "StructuredDocumentation",
+										"src": "5868:237:2",
+										"text": "@dev Queries the address capable of withdrawing rewards for a given delegator.\n @param delegatorAddress The address of the delegator\n @return withdrawAddress The address capable of withdrawing rewards for the delegator."
+									},
+									"functionSelector": "5431f450",
+									"id": 243,
+									"implemented": false,
+									"kind": "function",
+									"modifiers": [],
+									"name": "delegatorWithdrawAddress",
+									"nameLocation": "6119:24:2",
+									"nodeType": "FunctionDefinition",
+									"parameters": {
+										"id": 239,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 238,
+												"mutability": "mutable",
+												"name": "delegatorAddress",
+												"nameLocation": "6161:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 243,
+												"src": "6153:24:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 237,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "6153:7:2",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "6143:40:2"
+									},
+									"returnParameters": {
+										"id": 242,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 241,
+												"mutability": "mutable",
+												"name": "withdrawAddress",
+												"nameLocation": "6221:15:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 243,
+												"src": "6207:29:2",
+												"stateVariable": false,
+												"storageLocation": "memory",
+												"typeDescriptions": {
+													"typeIdentifier": "t_string_memory_ptr",
+													"typeString": "string"
+												},
+												"typeName": {
+													"id": 240,
+													"name": "string",
+													"nodeType": "ElementaryTypeName",
+													"src": "6207:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_string_storage_ptr",
+														"typeString": "string"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "6206:31:2"
+									},
+									"scope": 267,
+									"src": "6110:128:2",
+									"stateMutability": "view",
+									"virtual": false,
+									"visibility": "external"
+								},
+								{
+									"anonymous": false,
+									"documentation": {
+										"id": 244,
+										"nodeType": "StructuredDocumentation",
+										"src": "6244:215:2",
+										"text": "@dev SetWithdrawerAddress defines an Event emitted when a new withdrawer address is being set\n @param caller the caller of the transaction\n @param withdrawerAddress the newly set withdrawer address"
+									},
+									"eventSelector": "b55d29542a844fa64e70cbc06556201957fa0253fe7b54677830b586e2288e1e",
+									"id": 250,
+									"name": "SetWithdrawerAddress",
+									"nameLocation": "6470:20:2",
+									"nodeType": "EventDefinition",
+									"parameters": {
+										"id": 249,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 246,
+												"indexed": true,
+												"mutability": "mutable",
+												"name": "caller",
+												"nameLocation": "6516:6:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 250,
+												"src": "6500:22:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 245,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "6500:7:2",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 248,
+												"indexed": false,
+												"mutability": "mutable",
+												"name": "withdrawerAddress",
+												"nameLocation": "6539:17:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 250,
+												"src": "6532:24:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_string_memory_ptr",
+													"typeString": "string"
+												},
+												"typeName": {
+													"id": 247,
+													"name": "string",
+													"nodeType": "ElementaryTypeName",
+													"src": "6532:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_string_storage_ptr",
+														"typeString": "string"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "6490:72:2"
+									},
+									"src": "6464:99:2"
+								},
+								{
+									"anonymous": false,
+									"documentation": {
+										"id": 251,
+										"nodeType": "StructuredDocumentation",
+										"src": "6569:294:2",
+										"text": "@dev WithdrawDelegatorRewards defines an Event emitted when rewards from a delegation are withdrawn\n @param delegatorAddress the address of the delegator\n @param validatorAddress the address of the validator\n @param amount the amount being withdrawn from the delegation"
+									},
+									"eventSelector": "8d0912e7f8b09f64d001b73731ae9eecce7fe900e91a92ee9499659777450112",
+									"id": 259,
+									"name": "WithdrawDelegatorRewards",
+									"nameLocation": "6874:24:2",
+									"nodeType": "EventDefinition",
+									"parameters": {
+										"id": 258,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 253,
+												"indexed": true,
+												"mutability": "mutable",
+												"name": "delegatorAddress",
+												"nameLocation": "6924:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 259,
+												"src": "6908:32:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_address",
+													"typeString": "address"
+												},
+												"typeName": {
+													"id": 252,
+													"name": "address",
+													"nodeType": "ElementaryTypeName",
+													"src": "6908:7:2",
+													"stateMutability": "nonpayable",
+													"typeDescriptions": {
+														"typeIdentifier": "t_address",
+														"typeString": "address"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 255,
+												"indexed": true,
+												"mutability": "mutable",
+												"name": "validatorAddress",
+												"nameLocation": "6965:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 259,
+												"src": "6950:31:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_string_memory_ptr",
+													"typeString": "string"
+												},
+												"typeName": {
+													"id": 254,
+													"name": "string",
+													"nodeType": "ElementaryTypeName",
+													"src": "6950:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_string_storage_ptr",
+														"typeString": "string"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 257,
+												"indexed": false,
+												"mutability": "mutable",
+												"name": "amount",
+												"nameLocation": "6999:6:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 259,
+												"src": "6991:14:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_uint256",
+													"typeString": "uint256"
+												},
+												"typeName": {
+													"id": 256,
+													"name": "uint256",
+													"nodeType": "ElementaryTypeName",
+													"src": "6991:7:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_uint256",
+														"typeString": "uint256"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "6898:113:2"
+									},
+									"src": "6868:144:2"
+								},
+								{
+									"anonymous": false,
+									"documentation": {
+										"id": 260,
+										"nodeType": "StructuredDocumentation",
+										"src": "7018:246:2",
+										"text": "@dev WithdrawValidatorCommission defines an Event emitted when validator commissions are being withdrawn\n @param validatorAddress is the address of the validator\n @param commission is the total commission earned by the validator"
+									},
+									"eventSelector": "27596802346c7411d593e471243e3f9570666fade155d35f26150d851fdaf587",
+									"id": 266,
+									"name": "WithdrawValidatorCommission",
+									"nameLocation": "7275:27:2",
+									"nodeType": "EventDefinition",
+									"parameters": {
+										"id": 265,
+										"nodeType": "ParameterList",
+										"parameters": [
+											{
+												"constant": false,
+												"id": 262,
+												"indexed": true,
+												"mutability": "mutable",
+												"name": "validatorAddress",
+												"nameLocation": "7327:16:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 266,
+												"src": "7312:31:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_string_memory_ptr",
+													"typeString": "string"
+												},
+												"typeName": {
+													"id": 261,
+													"name": "string",
+													"nodeType": "ElementaryTypeName",
+													"src": "7312:6:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_string_storage_ptr",
+														"typeString": "string"
+													}
+												},
+												"visibility": "internal"
+											},
+											{
+												"constant": false,
+												"id": 264,
+												"indexed": false,
+												"mutability": "mutable",
+												"name": "commission",
+												"nameLocation": "7361:10:2",
+												"nodeType": "VariableDeclaration",
+												"scope": 266,
+												"src": "7353:18:2",
+												"stateVariable": false,
+												"storageLocation": "default",
+												"typeDescriptions": {
+													"typeIdentifier": "t_uint256",
+													"typeString": "uint256"
+												},
+												"typeName": {
+													"id": 263,
+													"name": "uint256",
+													"nodeType": "ElementaryTypeName",
+													"src": "7353:7:2",
+													"typeDescriptions": {
+														"typeIdentifier": "t_uint256",
+														"typeString": "uint256"
+													}
+												},
+												"visibility": "internal"
+											}
+										],
+										"src": "7302:75:2"
+									},
+									"src": "7269:109:2"
+								}
+							],
+							"scope": 268,
+							"src": "1330:6050:2",
+							"usedErrors": []
+						}
+					],
+					"src": "36:7345:2"
+				},
+				"id": 2
+			}
+		}
+	}
+}

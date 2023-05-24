@@ -1,0 +1,105 @@
+{
+	"compiler": {
+		"version": "0.8.19+commit.7dd6d404"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"name": "_airdrop",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/SLD.sol": "LquidStaking"
+		},
+		"evmVersion": "paris",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"@openzeppelin/contracts/security/ReentrancyGuard.sol": {
+			"keccak256": "0x190dd6f8d592b7e4e930feb7f4313aeb8e1c4ad3154c27ce1cf6a512fc30d8cc",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://4ce8dfb62d0c4fa260d6eec8f1cd47f5f2a044e11bde5b31d18072fa6e7d9010",
+				"dweb:/ipfs/QmTyFztU3tLEcEDnqqiaW4UJetqsU77LXc6pjc9oTXCK5u"
+			]
+		},
+		"@openzeppelin/contracts/token/ERC20/IERC20.sol": {
+			"keccak256": "0x9750c6b834f7b43000631af5cc30001c5f547b3ceb3635488f140f60e897ea6b",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://5a7d5b1ef5d8d5889ad2ed89d8619c09383b80b72ab226e0fe7bde1636481e34",
+				"dweb:/ipfs/QmebXWgtEfumQGBdVeM6c71McLixYXQP5Bk6kKXuoY4Bmr"
+			]
+		},
+		"contracts/SLD.sol": {
+			"keccak256": "0x03d970214346b21cd424f68b163850c1df61586e1b6039dab9572ecf4f60281d",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://2e592d685f0607b3bf3ee8daf6f1fc85efb5f05ec1d2899a108459359ffda556",
+				"dweb:/ipfs/Qmd2UkfwKe95dtV3XowzYj3m4Xu5rWC8DbRCCznAGTRBtg"
+			]
+		},
+		"contracts/common/Authorization.sol": {
+			"keccak256": "0xf77a5f9eb42b7f546d2beeb49e1c120f0491620fbf1402a687ac34a275c6cb05",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://166523692d8779b98a4963ab4a9f5a9aeb4ade68803051b88816de82496ffda7",
+				"dweb:/ipfs/QmYCndS9oDJ3cF7A5admkYN2SyZzBg6129DBjvYKSd8Bnv"
+			]
+		},
+		"contracts/common/Types.sol": {
+			"keccak256": "0x2280bf7e63e011c5263d33ae3cf64673e27ee08226116a5ae289a05c026e5cc8",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://e5c63f09b85147d1343d16c828110369fea9535c1ad69d7855f1f6f04208eaa7",
+				"dweb:/ipfs/QmQFbYkU3ao25UjSYDqUUP1sPEzFJqJnT2xAgfo5g2ghmA"
+			]
+		},
+		"contracts/stateful/Staking.sol": {
+			"keccak256": "0x774d4bf7a848893697fa75fa11a2ec288e6df6f010f9bdd8b3c6010ef007ac67",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://459ec9fd703b368a4c7a36bb33a3bb37941f1d4c03211fa79902225ebed7117d",
+				"dweb:/ipfs/QmQ5rPCr1fQyzUAuP8saGVEd7vry7tuW4ULq4EaeL1tsUv"
+			]
+		}
+	},
+	"version": 1
+}

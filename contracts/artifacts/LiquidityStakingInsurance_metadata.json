@@ -1,0 +1,85 @@
+{
+	"compiler": {
+		"version": "0.8.19+commit.7dd6d404"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/SLD.sol": "LiquidityStakingInsurance"
+		},
+		"evmVersion": "paris",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"contracts/SLD.sol": {
+			"keccak256": "0x9a31b23814f32300c9c5e2449609c5027be5c3a0c7e42a640481ded3c5cd804c",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://44776502056f83982d5b6b7691755225198df3f792d6d9202a9b0745a2e62c89",
+				"dweb:/ipfs/QmeUC6SMeFnPfiiy2xEupPEpbNepjTBz9Z7kfJZ1gcScKE"
+			]
+		},
+		"contracts/common/Authorization.sol": {
+			"keccak256": "0xf77a5f9eb42b7f546d2beeb49e1c120f0491620fbf1402a687ac34a275c6cb05",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://166523692d8779b98a4963ab4a9f5a9aeb4ade68803051b88816de82496ffda7",
+				"dweb:/ipfs/QmYCndS9oDJ3cF7A5admkYN2SyZzBg6129DBjvYKSd8Bnv"
+			]
+		},
+		"contracts/common/GenericAuthorization.sol": {
+			"keccak256": "0x5560defd75b84c2d333dc68120a9d425423ff7cd0c443fcd50209f9d0e0dff88",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://a7fc6b0f9833f4757748e520f419543a1c4f5e5fd8096a3910a62897ef13a7b0",
+				"dweb:/ipfs/QmQNPCcwxRLFYfUpY2aAJ4mzg4hq9bS4qL4sMBiH45E9sC"
+			]
+		},
+		"contracts/common/Types.sol": {
+			"keccak256": "0x2280bf7e63e011c5263d33ae3cf64673e27ee08226116a5ae289a05c026e5cc8",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://e5c63f09b85147d1343d16c828110369fea9535c1ad69d7855f1f6f04208eaa7",
+				"dweb:/ipfs/QmQFbYkU3ao25UjSYDqUUP1sPEzFJqJnT2xAgfo5g2ghmA"
+			]
+		},
+		"contracts/stateful/Distribution.sol": {
+			"keccak256": "0x129af8b44c52e6e0299afd2df54a495854706014db407324649af3a5d0e65bdc",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://c0b4c7451e78a139a90a462cf5e89c78ca21e0a88bcab8c5d9c7f9fb266c6413",
+				"dweb:/ipfs/QmVBtoPnpf97PAZqmoixFdeoJmkdC3QiAMoG98R5SwW2Z7"
+			]
+		},
+		"contracts/stateful/Staking.sol": {
+			"keccak256": "0x774d4bf7a848893697fa75fa11a2ec288e6df6f010f9bdd8b3c6010ef007ac67",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://459ec9fd703b368a4c7a36bb33a3bb37941f1d4c03211fa79902225ebed7117d",
+				"dweb:/ipfs/QmQ5rPCr1fQyzUAuP8saGVEd7vry7tuW4ULq4EaeL1tsUv"
+			]
+		}
+	},
+	"version": 1
+}

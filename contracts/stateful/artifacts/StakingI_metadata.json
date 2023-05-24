@@ -1,0 +1,1180 @@
+{
+	"compiler": {
+		"version": "0.8.19+commit.7dd6d404"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "spender",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "string[]",
+						"name": "methods",
+						"type": "string[]"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256[]",
+						"name": "values",
+						"type": "uint256[]"
+					}
+				],
+				"name": "AllowanceChange",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "spender",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "string[]",
+						"name": "methods",
+						"type": "string[]"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "value",
+						"type": "uint256"
+					}
+				],
+				"name": "Approval",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "creationHeight",
+						"type": "uint256"
+					}
+				],
+				"name": "CancelUnbondingDelegation",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "newShares",
+						"type": "uint256"
+					}
+				],
+				"name": "Delegate",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "string",
+						"name": "validatorSrcAddress",
+						"type": "string"
+					},
+					{
+						"indexed": true,
+						"internalType": "string",
+						"name": "validatorDstAddress",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "completionTime",
+						"type": "uint256"
+					}
+				],
+				"name": "Redelegate",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "completionTime",
+						"type": "uint256"
+					}
+				],
+				"name": "Unbond",
+				"type": "event"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "owner",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "spender",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "method",
+						"type": "string"
+					}
+				],
+				"name": "allowance",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "remaining",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "spender",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string[]",
+						"name": "methods",
+						"type": "string[]"
+					}
+				],
+				"name": "approve",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "approved",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "creationHeight",
+						"type": "uint256"
+					}
+				],
+				"name": "cancelUnbondingDelegation",
+				"outputs": [
+					{
+						"internalType": "int64",
+						"name": "completionTime",
+						"type": "int64"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "spender",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string[]",
+						"name": "methods",
+						"type": "string[]"
+					}
+				],
+				"name": "decreaseAllowance",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "approved",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "delegate",
+				"outputs": [
+					{
+						"internalType": "int64",
+						"name": "completionTime",
+						"type": "int64"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					}
+				],
+				"name": "delegation",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "shares",
+						"type": "uint256"
+					},
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "denom",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "amount",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Coin",
+						"name": "balance",
+						"type": "tuple"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "spender",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string[]",
+						"name": "methods",
+						"type": "string[]"
+					}
+				],
+				"name": "increaseAllowance",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "approved",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "validatorSrcAddress",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "validatorDstAddress",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "redelegate",
+				"outputs": [
+					{
+						"internalType": "int64",
+						"name": "completionTime",
+						"type": "int64"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "srcValidatorAddress",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "dstValidatorAddress",
+						"type": "string"
+					}
+				],
+				"name": "redelegation",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "int64",
+								"name": "creationHeight",
+								"type": "int64"
+							},
+							{
+								"internalType": "int64",
+								"name": "completionTime",
+								"type": "int64"
+							},
+							{
+								"internalType": "uint256",
+								"name": "initialBalance",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "sharesDst",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct RedelegationEntry[]",
+						"name": "entries",
+						"type": "tuple[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "srcValidatorAddress",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "dstValidatorAddress",
+						"type": "string"
+					},
+					{
+						"components": [
+							{
+								"internalType": "bytes",
+								"name": "key",
+								"type": "bytes"
+							},
+							{
+								"internalType": "uint64",
+								"name": "offset",
+								"type": "uint64"
+							},
+							{
+								"internalType": "uint64",
+								"name": "limit",
+								"type": "uint64"
+							},
+							{
+								"internalType": "bool",
+								"name": "countTotal",
+								"type": "bool"
+							},
+							{
+								"internalType": "bool",
+								"name": "reverse",
+								"type": "bool"
+							}
+						],
+						"internalType": "struct PageRequest",
+						"name": "pageRequest",
+						"type": "tuple"
+					}
+				],
+				"name": "redelegations",
+				"outputs": [
+					{
+						"components": [
+							{
+								"components": [
+									{
+										"components": [
+											{
+												"internalType": "int64",
+												"name": "creationHeight",
+												"type": "int64"
+											},
+											{
+												"internalType": "int64",
+												"name": "completionTime",
+												"type": "int64"
+											},
+											{
+												"internalType": "uint256",
+												"name": "initialBalance",
+												"type": "uint256"
+											},
+											{
+												"internalType": "uint256",
+												"name": "sharesDst",
+												"type": "uint256"
+											}
+										],
+										"internalType": "struct RedelegationEntry[]",
+										"name": "entries",
+										"type": "tuple[]"
+									}
+								],
+								"internalType": "struct Redelegation",
+								"name": "redelegation",
+								"type": "tuple"
+							},
+							{
+								"components": [
+									{
+										"components": [
+											{
+												"internalType": "int64",
+												"name": "creationHeight",
+												"type": "int64"
+											},
+											{
+												"internalType": "int64",
+												"name": "completionTime",
+												"type": "int64"
+											},
+											{
+												"internalType": "uint256",
+												"name": "initialBalance",
+												"type": "uint256"
+											},
+											{
+												"internalType": "uint256",
+												"name": "sharesDst",
+												"type": "uint256"
+											}
+										],
+										"internalType": "struct RedelegationEntry",
+										"name": "redelegationEntry",
+										"type": "tuple"
+									},
+									{
+										"internalType": "uint256",
+										"name": "balance",
+										"type": "uint256"
+									}
+								],
+								"internalType": "struct RedelegationEntryResponse[]",
+								"name": "entries",
+								"type": "tuple[]"
+							}
+						],
+						"internalType": "struct RedelegationResponse",
+						"name": "response",
+						"type": "tuple"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					}
+				],
+				"name": "unbondingDelegation",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "int64",
+								"name": "creationHeight",
+								"type": "int64"
+							},
+							{
+								"internalType": "int64",
+								"name": "completionTime",
+								"type": "int64"
+							},
+							{
+								"internalType": "uint256",
+								"name": "initialBalance",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "balance",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct UnbondingDelegationEntry[]",
+						"name": "entries",
+						"type": "tuple[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "delegatorAddress",
+						"type": "address"
+					},
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "undelegate",
+				"outputs": [
+					{
+						"internalType": "int64",
+						"name": "completionTime",
+						"type": "int64"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "string",
+						"name": "validatorAddress",
+						"type": "string"
+					}
+				],
+				"name": "validator",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "operatorAddress",
+								"type": "string"
+							},
+							{
+								"internalType": "string",
+								"name": "consensusPubkey",
+								"type": "string"
+							},
+							{
+								"internalType": "bool",
+								"name": "jailed",
+								"type": "bool"
+							},
+							{
+								"internalType": "enum BondStatus",
+								"name": "status",
+								"type": "uint8"
+							},
+							{
+								"internalType": "uint256",
+								"name": "tokens",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "delegatorShares",
+								"type": "uint256"
+							},
+							{
+								"internalType": "string",
+								"name": "description",
+								"type": "string"
+							},
+							{
+								"internalType": "int64",
+								"name": "unbondingHeight",
+								"type": "int64"
+							},
+							{
+								"internalType": "int64",
+								"name": "unbondingTime",
+								"type": "int64"
+							},
+							{
+								"internalType": "uint256",
+								"name": "commission",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "minSelfDelegation",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Validator[]",
+						"name": "validators",
+						"type": "tuple[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "string",
+						"name": "status",
+						"type": "string"
+					},
+					{
+						"components": [
+							{
+								"internalType": "bytes",
+								"name": "key",
+								"type": "bytes"
+							},
+							{
+								"internalType": "uint64",
+								"name": "offset",
+								"type": "uint64"
+							},
+							{
+								"internalType": "uint64",
+								"name": "limit",
+								"type": "uint64"
+							},
+							{
+								"internalType": "bool",
+								"name": "countTotal",
+								"type": "bool"
+							},
+							{
+								"internalType": "bool",
+								"name": "reverse",
+								"type": "bool"
+							}
+						],
+						"internalType": "struct PageRequest",
+						"name": "pageRequest",
+						"type": "tuple"
+					}
+				],
+				"name": "validators",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "string",
+								"name": "operatorAddress",
+								"type": "string"
+							},
+							{
+								"internalType": "string",
+								"name": "consensusPubkey",
+								"type": "string"
+							},
+							{
+								"internalType": "bool",
+								"name": "jailed",
+								"type": "bool"
+							},
+							{
+								"internalType": "enum BondStatus",
+								"name": "status",
+								"type": "uint8"
+							},
+							{
+								"internalType": "uint256",
+								"name": "tokens",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "delegatorShares",
+								"type": "uint256"
+							},
+							{
+								"internalType": "string",
+								"name": "description",
+								"type": "string"
+							},
+							{
+								"internalType": "int64",
+								"name": "unbondingHeight",
+								"type": "int64"
+							},
+							{
+								"internalType": "int64",
+								"name": "unbondingTime",
+								"type": "int64"
+							},
+							{
+								"internalType": "uint256",
+								"name": "commission",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "minSelfDelegation",
+								"type": "uint256"
+							}
+						],
+						"internalType": "struct Validator[]",
+						"name": "validators",
+						"type": "tuple[]"
+					},
+					{
+						"components": [
+							{
+								"internalType": "bytes",
+								"name": "nextKey",
+								"type": "bytes"
+							},
+							{
+								"internalType": "uint64",
+								"name": "total",
+								"type": "uint64"
+							}
+						],
+						"internalType": "struct PageResponse",
+						"name": "pageResponse",
+						"type": "tuple"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"author": "Evmos Team",
+			"custom:address": "0x0000000000000000000000000000000000000800",
+			"details": "The interface through which solidity contracts will interact with staking. We follow this same interface including four-byte function selectors, in the precompile that wraps the pallet.",
+			"events": {
+				"AllowanceChange(address,address,string[],uint256[])": {
+					"details": "This event is emitted when the allowance of a spender is changed by a call to the decrease or increase allowance method. The values field specifies the new allowances and the methods field holds the information for which methods the approval was set.",
+					"params": {
+						"methods": "The message type URLs of the methods for which the approval is set.",
+						"owner": "The owner of the tokens.",
+						"spender": "The address which will spend the funds.",
+						"values": "The amounts of tokens approved to be spent."
+					}
+				},
+				"Approval(address,address,string[],uint256)": {
+					"details": "This event is emitted when the allowance of a spender is set by a call to the approve method. The value field specifies the new allowance and the methods field holds the information for which methods the approval was set.",
+					"params": {
+						"methods": "The message type URLs of the methods for which the approval is set.",
+						"owner": "The owner of the tokens.",
+						"spender": "The address which will spend the funds.",
+						"value": "The amount of tokens approved to be spent."
+					}
+				},
+				"CancelUnbondingDelegation(address,string,uint256,uint256)": {
+					"details": "CancelUnbondingDelegation defines an Event emitted when a given amount of tokens that are in the process of unbonding from the validator address are bonded again.",
+					"params": {
+						"amount": "The amount of Coin that was in the unbonding process which is to be cancelled",
+						"creationHeight": "The block height at which the unbonding of a delegation was initiated",
+						"delegatorAddress": "The address of the delegator",
+						"validatorAddress": "The address of the validator"
+					}
+				},
+				"Delegate(address,string,uint256,uint256)": {
+					"details": "Delegate defines an Event emitted when a given amount of tokens are delegated from the delegator address to the validator address.",
+					"params": {
+						"amount": "The amount of Coin being delegated",
+						"delegatorAddress": "The address of the delegator",
+						"newShares": "The new delegation shares being held",
+						"validatorAddress": "The address of the validator"
+					}
+				},
+				"Redelegate(address,string,string,uint256,uint256)": {
+					"details": "Redelegate defines an Event emitted when a given amount of tokens are redelegated from the source validator address to the destination validator address.",
+					"params": {
+						"amount": "The amount of Coin being redelegated",
+						"completionTime": "The time at which the redelegation is completed",
+						"delegatorAddress": "The address of the delegator",
+						"validatorDstAddress": "The address of the validator to which the delegation is directed",
+						"validatorSrcAddress": "The address of the validator from which the delegation is retracted"
+					}
+				},
+				"Unbond(address,string,uint256,uint256)": {
+					"details": "Unbond defines an Event emitted when a given amount of tokens are unbonded from the validator address to the delegator address.",
+					"params": {
+						"amount": "The amount of Coin being unbonded",
+						"completionTime": "The time at which the unbonding is completed",
+						"delegatorAddress": "The address of the delegator",
+						"validatorAddress": "The address of the validator"
+					}
+				}
+			},
+			"kind": "dev",
+			"methods": {
+				"allowance(address,address,string)": {
+					"details": "Returns the remaining number of tokens that spender will be allowed to spend on behalf of the owner through IBC transfer methods or staking. This is zero by default.",
+					"params": {
+						"method": "The message type URL of the methods for which the approval should be queried.",
+						"owner": "The address of the account owning tokens.",
+						"spender": "The address of the account able to transfer the tokens."
+					},
+					"returns": {
+						"remaining": "The remaining number of tokens available to be spent."
+					}
+				},
+				"approve(address,uint256,string[])": {
+					"details": "Approves a list of Cosmos or IBC transactions with a specific amount of tokens.",
+					"params": {
+						"amount": "The amount of tokens to be spent.",
+						"methods": "The message type URLs of the methods to approve.",
+						"spender": "The address which will spend the funds."
+					},
+					"returns": {
+						"approved": "Boolean value to indicate if the approval was successful."
+					}
+				},
+				"cancelUnbondingDelegation(address,string,uint256,uint256)": {
+					"details": "Allows delegators to cancel the unbondingDelegation entry and to delegate back to a previous validator.",
+					"params": {
+						"amount": "The amount of the Coin",
+						"creationHeight": "The height at which the unbonding took place",
+						"delegatorAddress": "The address of the delegator",
+						"validatorAddress": "The address of the validator"
+					},
+					"returns": {
+						"completionTime": "The time when the cancellation of the unbonding delegation is completed"
+					}
+				},
+				"decreaseAllowance(address,uint256,string[])": {
+					"details": "Decreases the allowance of a given spender by a specific amount of tokens for IBC transfer methods or staking.",
+					"params": {
+						"amount": "The amount of tokens to be spent.",
+						"methods": "The message type URLs of the methods to approve.",
+						"spender": "The address which will spend the funds."
+					},
+					"returns": {
+						"approved": "Boolean value to indicate if the approval was successful."
+					}
+				},
+				"delegate(address,string,uint256)": {
+					"details": "Defines a method for performing a delegation of coins from a delegator to a validator.",
+					"params": {
+						"amount": "The amount of the Coin to be delegated to the validator",
+						"delegatorAddress": "The address of the delegator",
+						"validatorAddress": "The address of the validator"
+					}
+				},
+				"delegation(address,string)": {
+					"details": "Queries the given amount of the bond denomination to a validator.",
+					"params": {
+						"delegatorAddress": "The address of the delegator.",
+						"validatorAddress": "The address of the validator."
+					},
+					"returns": {
+						"balance": "The amount in Coin, that the delegator has delegated to the given validator.",
+						"shares": "The amount of shares, that the delegator has received."
+					}
+				},
+				"increaseAllowance(address,uint256,string[])": {
+					"details": "Increase the allowance of a given spender by a specific amount of tokens for IBC transfer methods or staking.",
+					"params": {
+						"amount": "The amount of tokens to be spent.",
+						"methods": "The message type URLs of the methods to approve.",
+						"spender": "The address which will spend the funds."
+					},
+					"returns": {
+						"approved": "Boolean value to indicate if the approval was successful."
+					}
+				},
+				"redelegate(address,string,string,uint256)": {
+					"details": "Defines a method for performing a redelegation of coins from a delegator and source validator to a destination validator.",
+					"params": {
+						"amount": "The amount to be redelegated to the validator",
+						"delegatorAddress": "The address of the delegator",
+						"validatorDstAddress": "The validator to which the redelegation is destined",
+						"validatorSrcAddress": "The validator from which the redelegation is initiated"
+					},
+					"returns": {
+						"completionTime": "The time when the redelegation is completed"
+					}
+				},
+				"redelegation(address,string,string)": {
+					"details": "Queries all redelegations from a source to a destination validator for a given delegator.",
+					"params": {
+						"delegatorAddress": "The address of the delegator.",
+						"dstValidatorAddress": "Defines the validator address to redelegate to.",
+						"srcValidatorAddress": "Defines the validator address to redelegate from."
+					},
+					"returns": {
+						"entries": "The active redelegations for the given delegator, source and destination validator combination."
+					}
+				},
+				"redelegations(address,string,string,(bytes,uint64,uint64,bool,bool))": {
+					"details": "Queries all redelegations from a source to to a destination validator for a given delegator in a specified pagination manner.",
+					"params": {
+						"delegatorAddress": "The address of the delegator.",
+						"dstValidatorAddress": "Defines the validator address to redelegate to.",
+						"pageRequest": "Defines an optional pagination for the request.",
+						"srcValidatorAddress": "Defines the validator address to redelegate from."
+					},
+					"returns": {
+						"response": "Holds the redelegations for the given delegator, source and destination validator combination."
+					}
+				},
+				"unbondingDelegation(address,string)": {
+					"details": "Returns the delegation shares and coins, that are currently unbonding for a given delegator and validator pair.",
+					"params": {
+						"delegatorAddress": "The address of the delegator.",
+						"validatorAddress": "The address of the validator."
+					},
+					"returns": {
+						"entries": "The delegations that are currently unbonding."
+					}
+				},
+				"undelegate(address,string,uint256)": {
+					"details": "Defines a method for performing an undelegation from a delegate and a validator.",
+					"params": {
+						"amount": "The amount to be undelegated from the validator",
+						"delegatorAddress": "The address of the delegator",
+						"validatorAddress": "The address of the validator"
+					},
+					"returns": {
+						"completionTime": "The time when the undelegation is completed"
+					}
+				},
+				"validator(string)": {
+					"details": "Queries validator info for a given validator address.",
+					"params": {
+						"validatorAddress": "The address of the validator."
+					},
+					"returns": {
+						"validators": "The validator info for the given validator address."
+					}
+				},
+				"validators(string,(bytes,uint64,uint64,bool,bool))": {
+					"details": "Queries all validators that match the given status.",
+					"params": {
+						"pageRequest": "Defines an optional pagination for the request.",
+						"status": "Enables to query for validators matching a given status."
+					}
+				}
+			},
+			"title": "Staking Precompiled Contract",
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/stateful/Staking.sol": "StakingI"
+		},
+		"evmVersion": "paris",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"contracts/common/Authorization.sol": {
+			"keccak256": "0xf77a5f9eb42b7f546d2beeb49e1c120f0491620fbf1402a687ac34a275c6cb05",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://166523692d8779b98a4963ab4a9f5a9aeb4ade68803051b88816de82496ffda7",
+				"dweb:/ipfs/QmYCndS9oDJ3cF7A5admkYN2SyZzBg6129DBjvYKSd8Bnv"
+			]
+		},
+		"contracts/common/Types.sol": {
+			"keccak256": "0x2280bf7e63e011c5263d33ae3cf64673e27ee08226116a5ae289a05c026e5cc8",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://e5c63f09b85147d1343d16c828110369fea9535c1ad69d7855f1f6f04208eaa7",
+				"dweb:/ipfs/QmQFbYkU3ao25UjSYDqUUP1sPEzFJqJnT2xAgfo5g2ghmA"
+			]
+		},
+		"contracts/stateful/Staking.sol": {
+			"keccak256": "0x774d4bf7a848893697fa75fa11a2ec288e6df6f010f9bdd8b3c6010ef007ac67",
+			"license": "LGPL-v3",
+			"urls": [
+				"bzz-raw://459ec9fd703b368a4c7a36bb33a3bb37941f1d4c03211fa79902225ebed7117d",
+				"dweb:/ipfs/QmQ5rPCr1fQyzUAuP8saGVEd7vry7tuW4ULq4EaeL1tsUv"
+			]
+		}
+	},
+	"version": 1
+}
