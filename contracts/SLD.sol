@@ -14,7 +14,6 @@ contract SLDToken is ERC20,  ReentrancyGuard {
         uint256 creationHeight;
     }
     uint256 public totalStakedEvmos;
-    uint256 public totalUnbondedStEvmos;
 
     string public validatorAddr;
     mapping(address => RedeemInfo[]) public userRedeems; // User's redeeming instances
@@ -57,7 +56,7 @@ contract SLDToken is ERC20,  ReentrancyGuard {
     */
     function deposit() payable external {
         deposits[msg.sender] += msg.value;
-    }    
+    }
 
     function withdraw(uint256 _amount) external {
         require(deposits[msg.sender]>=_amount,"You don't have enough evmos withdraw!!!");
@@ -75,7 +74,7 @@ contract SLDToken is ERC20,  ReentrancyGuard {
 
 
     /**
-    * @notice delegate caller's _amount" of Evmos to validator, and give them stEvmos 
+    * @notice delegate caller's _amount" of Evmos to validator, and give them stEvmos
     * @param _amount the delegate quantity.
     */
     function delegate(uint256 _amount) external {
@@ -107,11 +106,11 @@ contract SLDToken is ERC20,  ReentrancyGuard {
     * @param _amount the redeem quantity.
     */
     function unbond(uint256  _amount) external nonReentrant {
-        _approveRequiredMsgs(_amount);
         require(_amount > 0, "redeem: StEvmosAmount cannot be null");
         _transfer(msg.sender, address(this), _amount);
         // get corresponding Evmos amount
         uint256 EvmosAmount = _amount * totalStakedEvmos / totalSupply();
+        _approveRequiredMsgs(EvmosAmount);
         int64 completionTime = STAKING_CONTRACT.undelegate(address(this), validatorAddr, EvmosAmount);
         emit Unbond(msg.sender, _amount, EvmosAmount,completionTime);
         // add redeeming entry
@@ -162,6 +161,9 @@ contract SLDToken is ERC20,  ReentrancyGuard {
         return totalStakedEvmos*1E18/totalSupply();
     }
 
+    function getUserRedeemsList(address _userAddress) external view returns (RedeemInfo[] memory){
+        return userRedeems[_userAddress];
+    }
     receive() external payable {}
 
     fallback() external payable {}
